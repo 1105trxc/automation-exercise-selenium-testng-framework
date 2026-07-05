@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Log4j2 Configuration
+    SLF4J (API) → Log4j2 (Implementation)
+
+    Levels: TRACE < DEBUG < INFO < WARN < ERROR < FATAL
+    - INFO:  Major test actions, assertions, test start/end
+    - DEBUG: Detailed element interactions (click, type)
+    - WARN:  Non-critical issues (config file not found, using default)
+    - ERROR: Failures and exceptions
+-->
+<Configuration status="WARN" monitorInterval="30">
+    <Appenders>
+
+        <!-- Console output – shows in IDE Run window and terminal -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%-5level] %logger{30} - %msg%n"/>
+        </Console>
+
+        <!-- File output – saved to reports/logs/ -->
+        <File name="FileAppender"
+              fileName="reports/logs/test-execution.log"
+              append="false">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>
+
+    </Appenders>
+
+    <Loggers>
+
+        <!-- Our framework code: INFO level -->
+        <Logger name="com.automationexercise" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileAppender"/>
+        </Logger>
+
+        <!-- Reduce noise from Selenium internals -->
+        <Logger name="org.openqa.selenium" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Reduce noise from network layer -->
+        <Logger name="io.netty" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Reduce Allure noise -->
+        <Logger name="io.qameta.allure" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <!-- Root logger: catches anything not matched above -->
+        <Root level="WARN">
+            <AppenderRef ref="Console"/>
+        </Root>
+
+    </Loggers>
+</Configuration>
