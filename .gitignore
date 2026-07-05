@@ -1,0 +1,65 @@
+# ================================================
+# Git Ignore – Automation Exercise Framework
+# ================================================
+
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.factorypath
+
+# VS Code
+.vscode/
+
+# ================================================
+# Secrets – NEVER commit these
+# ================================================
+.env
+local.properties
+secrets.properties
+*.credentials
+
+# ================================================
+# Test Reports & Artifacts
+# ================================================
+allure-results/
+allure-report/
+reports/screenshots/
+reports/logs/
+
+# ================================================
+# OS Files
+# ================================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ================================================
+# Java
+# ================================================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# ================================================
+# Maven Wrapper
+# ================================================
+!.mvn/wrapper/maven-wrapper.properties
