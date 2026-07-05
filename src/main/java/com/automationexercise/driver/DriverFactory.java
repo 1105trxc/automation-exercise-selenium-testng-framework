@@ -1,0 +1,138 @@
+package com.automationexercise.driver;
+
+import com.automationexercise.config.ConfigManager;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.edge.EdgeOptions;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+
+/**
+ * DriverFactory – Manages WebDriver lifecycle using ThreadLocal.
+ *
+ * RESPONSIBILITIES:
+ * - Create (initialize) WebDriver instances
+ * - Provide the current thread's driver (getDriver)
+ * - Destroy (quit) the driver and clean up ThreadLocal
+ *
+ * WHY THREADLOCAL?
+ * ThreadLocal gives each thread its own WebDriver instance.
+ * This is essential for parallel test execution: two tests running
+ * simultaneously won't share the same browser window.
+ *
+ * RULE: Tests NEVER create WebDriver directly. Always use DriverFactory.
+ */
+public final class DriverFactory {
+
+    private static final Logger log = LoggerFactory.getLogger(DriverFactory.class);
+
+    /**
+     * ThreadLocal stores one WebDriver per thread.
+     * Thread 1 → its own Chrome browser
+     * Thread 2 → its own Firefox browser
+     * No interference between threads.
+     */
+    private static final ThreadLocal<WebDriver> driverThreadLocal = new ThreadLocal<>();
+
+    // Utility class – prevent instantiation
+    private DriverFactory() {
+        throw new UnsupportedOperationException("DriverFactory is a utility class.");
+    }
+
+    /**
+     * Initializes a new WebDriver for the current thread.
+     * Called in @BeforeMethod of BaseTest.
+     *
+     * @param browserType Which browser to launch
+     */
+    public static void initDriver(BrowserType browserType) {
+        boolean headless = ConfigManager.getBoolean("headless", false);
+        int pageLoadTimeout = ConfigManager.getInt("pageLoadTimeout", 30);
+
+        WebDriver driver = switch (browserType) {
+            case CHROME  -> createChromeDriver(headless);
+            case FIREFOX -> createFirefoxDriver(headless);
+            case EDGE    -> createEdgeDriver(headless);
+        };
+
+        driver.manage().window().maximize();
+        driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(pageLoadTimeout));
+
+        driverThreadLocal.set(driver);
+        log.info("Browser initialized: {} | Headless: {}", browserType, headless);
+    }
+
+    /**
+     * Returns the WebDriver for the current thread.
+     * Throws a clear error if driver is not initialized.
+     *
+     * @return Current thread's WebDriver
+     * @throws IllegalStateException if initDriver() was not called
+     */
+    public static WebDriver getDriver() {
+        WebDriver driver = driverThreadLocal.get();
+        if (driver == null) {
+            throw new IllegalStateException(
+                "WebDriver is not initialized for this thread. " +
+                "Ensure initDriver() is called in @BeforeMethod."
+            );
+        }
+        return driver;
+    }
+
+    /**
+     * Quits the WebDriver and removes it from ThreadLocal.
+     * Called in @AfterMethod(alwaysRun = true) of BaseTest.
+     * MUST be called to prevent browser process leaks.
+     */
+    public static void quitDriver() {
+        WebDriver driver = driverThreadLocal.get();
+        if (driver != null) {
+            driver.quit();
+            driverThreadLocal.remove();
+            log.info("Driver closed and removed from ThreadLocal.");
+        } else {
+            log.warn("quitDriver() called but no driver was found for this thread.");
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // Private factory methods for each browser
+    // -----------------------------------------------------------------
+
+    private static WebDriver createChromeDriver(boolean headless) {
+        ChromeOptions options = new ChromeOptions();
+        if (headless) {
+            options.addArguments("--headless=new");     // New headless mode (Selenium 4)
+        }
+        options.addArguments("--no-sandbox");           // Required in Linux CI environments
+        options.addArguments("--disable-dev-shm-usage"); // Prevent memory issues in Docker
+        options.addArguments("--disable-gpu");          // Stability in headless
+        options.addArguments("--remote-allow-origins=*");
+        // NOTE: Selenium Manager (built into Selenium 4) auto-downloads ChromeDriver.
+        // No need for WebDriverManager or manual driver setup.
+        return new ChromeDriver(options);
+    }
+
+    private static WebDriver createFirefoxDriver(boolean headless) {
+        FirefoxOptions options = new FirefoxOptions();
+        if (headless) {
+            options.addArguments("--headless");
+        }
+        return new FirefoxDriver(options);
+    }
+
+    private static WebDriver createEdgeDriver(boolean headless) {
+        EdgeOptions options = new EdgeOptions();
+        if (headless) {
+            options.addArguments("--headless=new");
+        }
+        return new EdgeDriver(options);
+    }
+}
