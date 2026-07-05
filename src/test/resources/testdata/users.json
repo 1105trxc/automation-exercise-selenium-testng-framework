@@ -1,0 +1,36 @@
+{
+  "_comment": "Test data for authentication tests. Used in Phase 2 with DataProvider + Jackson.",
+  "validUsers": [
+    {
+      "name": "John Automation",
+      "email": "john.auto@example.com",
+      "password": "Automation@2026",
+      "firstName": "John",
+      "lastName": "Automation",
+      "company": "QA Corp",
+      "address1": "123 Main Street",
+      "address2": "Suite 100",
+      "country": "United States",
+      "state": "California",
+      "city": "Los Angeles",
+      "zipcode": "90001",
+      "mobile": "5551234567",
+      "dayOfBirth": "10",
+      "monthOfBirth": "3",
+      "yearOfBirth": "1995",
+      "title": "Mr"
+    }
+  ],
+  "invalidLoginUsers": [
+    {
+      "email": "invalid.user@nonexistent.com",
+      "password": "WrongPassword999",
+      "expectedError": "Your email or password is incorrect!"
+    },
+    {
+      "email": "another.wrong@fake.xyz",
+      "password": "BadPass123",
+      "expectedError": "Your email or password is incorrect!"
+    }
+  ]
+}
