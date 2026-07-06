@@ -63,7 +63,15 @@ public class SignupPage extends BasePage {
 
     private static final By CREATE_ACCOUNT_BUTTON = By.cssSelector("button[data-qa='create-account']");
     private static final By CONTINUE_BUTTON        = By.cssSelector("a[data-qa='continue-button']");
-    private static final By ACCOUNT_CREATED_MSG    = By.xpath("//b[normalize-space()='ACCOUNT CREATED!']");
+
+    /**
+     * LOCATOR NOTE:
+     * The DOM text is "Account Created!" (mixed case).
+     * CSS text-transform: uppercase makes it APPEAR as "ACCOUNT CREATED!" in browser.
+     * XPath normalize-space() reads the RAW DOM text, not the CSS-rendered text.
+     * → MUST use contains() with actual DOM text, not the visual text!
+     */
+    private static final By ACCOUNT_CREATED_MSG    = By.xpath("//h2[contains(@class,'title')]//b");
 
     // -----------------------------------------------------------------
     // Constructor

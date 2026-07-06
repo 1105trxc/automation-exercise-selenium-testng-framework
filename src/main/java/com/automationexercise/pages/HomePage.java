@@ -48,8 +48,12 @@ public class HomePage extends BasePage {
     /** Test Cases link */
     private static final By TEST_CASES_LINK       = By.cssSelector("a[href='/test_cases']");
 
-    /** "ACCOUNT DELETED!" confirmation heading */
-    private static final By ACCOUNT_DELETED_MSG   = By.xpath("//b[text()='ACCOUNT DELETED!']");
+    /**
+     * "ACCOUNT DELETED!" confirmation heading.
+     * NOTE: DOM text is "Account Deleted!" – CSS text-transform makes it appear as
+     * "ACCOUNT DELETED!" in the browser. Use class-based selector to avoid text mismatch.
+     */
+    private static final By ACCOUNT_DELETED_MSG   = By.xpath("//h2[contains(@class,'title')]//b");
 
     /** Continue button (appears on account-created and account-deleted pages) */
     private static final By CONTINUE_BUTTON       = By.cssSelector("a[data-qa='continue-button']");

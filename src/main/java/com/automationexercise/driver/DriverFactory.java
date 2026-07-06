@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.HashMap;
 
 /**
  * DriverFactory – Manages WebDriver lifecycle using ThreadLocal.
@@ -115,6 +116,24 @@ public final class DriverFactory {
         options.addArguments("--disable-dev-shm-usage"); // Prevent memory issues in Docker
         options.addArguments("--disable-gpu");          // Stability in headless
         options.addArguments("--remote-allow-origins=*");
+
+        // ----------------------------------------------------------------
+        // Disable Chrome native popups that interfere with automation:
+        // - "Save address?" popup (autofill) → appears after filling registration form
+        // - "Save password?" bubble → appears after login
+        // These are NATIVE Chrome UI elements, not web elements.
+        // They cannot be dismissed by Selenium alone without these settings.
+        // ----------------------------------------------------------------
+        HashMap<String, Object> prefs = new HashMap<>();
+        prefs.put("autofill.profile_enabled", false);       // Disable address autofill
+        prefs.put("autofill.credit_card_enabled", false);   // Disable card autofill
+        prefs.put("credentials_enable_service", false);     // Disable password manager
+        prefs.put("profile.password_manager_enabled", false); // Disable save password
+        options.setExperimentalOption("prefs", prefs);
+
+        options.addArguments("--disable-popup-blocking");   // Don't block popups from page
+        options.addArguments("--disable-notifications");    // Block browser notifications
+
         // NOTE: Selenium Manager (built into Selenium 4) auto-downloads ChromeDriver.
         // No need for WebDriverManager or manual driver setup.
         return new ChromeDriver(options);
