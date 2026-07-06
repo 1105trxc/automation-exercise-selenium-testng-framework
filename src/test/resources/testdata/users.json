@@ -1,35 +1,39 @@
 {
-  "_comment": "Test data for authentication tests. Used in Phase 2 with DataProvider + Jackson.",
+  "_comment": "Test data for automation-exercise-selenium-testng-framework. Phase 2: added DataProvider support.",
+
   "validUsers": [
     {
-      "name": "John Automation",
-      "email": "john.auto@example.com",
-      "password": "Automation@2026",
-      "firstName": "John",
+      "_comment": "Template profile – email is generated dynamically at runtime to ensure test independence",
+      "title": "Mr",
+      "name": "Test Automation",
+      "firstName": "Test",
       "lastName": "Automation",
+      "password": "Automation@2026",
+      "dayOfBirth": "10",
+      "monthOfBirth": "3",
+      "yearOfBirth": "1995",
       "company": "QA Corp",
-      "address1": "123 Main Street",
+      "address1": "123 Automation Street",
       "address2": "Suite 100",
       "country": "United States",
       "state": "California",
       "city": "Los Angeles",
       "zipcode": "90001",
-      "mobile": "5551234567",
-      "dayOfBirth": "10",
-      "monthOfBirth": "3",
-      "yearOfBirth": "1995",
-      "title": "Mr"
+      "mobile": "5551234567"
     }
   ],
+
   "invalidLoginUsers": [
     {
-      "email": "invalid.user@nonexistent.com",
-      "password": "WrongPassword999",
+      "_comment": "TC-AE-003 Scenario 1: Completely non-existent account",
+      "email": "nonexistent.forever@fakeDomain999.xyz",
+      "password": "WrongPassword001",
       "expectedError": "Your email or password is incorrect!"
     },
     {
-      "email": "another.wrong@fake.xyz",
-      "password": "BadPass123",
+      "_comment": "TC-AE-003 Scenario 2: Valid-looking email but wrong password",
+      "email": "another.invalid.user@nowhere-site.com",
+      "password": "BadPass456!",
       "expectedError": "Your email or password is incorrect!"
     }
   ]

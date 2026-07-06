@@ -1,0 +1,10 @@
+{
+  "contactFormData": [
+    {
+      "name": "QA Automation Tester",
+      "email": "qa.automation.test@example.com",
+      "subject": "Automated Test - Contact Form Submission",
+      "message": "This is an automated test message submitted by Selenium WebDriver as part of the automation-exercise-selenium-testng-framework portfolio project. Please disregard this submission."
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+This is a test file used by TC-AE-006 (Contact Us Form) to verify the file upload functionality.
+Created as part of the automation-exercise-selenium-testng-framework portfolio project.

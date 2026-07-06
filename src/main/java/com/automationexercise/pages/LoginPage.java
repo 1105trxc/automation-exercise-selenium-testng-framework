@@ -167,4 +167,22 @@ public class LoginPage extends BasePage {
         click(SIGNUP_BUTTON);
         return this;
     }
+
+    /**
+     * Alias for clickSignupButtonExpectingError() – used in TC-AE-005.
+     * More descriptive name when testing duplicate email scenario.
+     */
+    public LoginPage clickSignupButtonExpectingDuplicate() {
+        return clickSignupButtonExpectingError();
+    }
+
+    /** Alias for isEmailExistsErrorVisible() – used in TC-AE-005. */
+    public boolean isSignupErrorVisible() {
+        return isEmailExistsErrorVisible();
+    }
+
+    /** Alias for getEmailExistsErrorMessage() – used in TC-AE-005. */
+    public String getSignupErrorMessage() {
+        return getEmailExistsErrorMessage();
+    }
 }

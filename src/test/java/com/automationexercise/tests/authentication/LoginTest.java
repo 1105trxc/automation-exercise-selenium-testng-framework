@@ -1,6 +1,9 @@
 package com.automationexercise.tests.authentication;
 
 import com.automationexercise.base.BaseTest;
+import com.automationexercise.dataproviders.TestDataProvider;
+import com.automationexercise.listeners.TestListener;
+import com.automationexercise.models.LoginData;
 import com.automationexercise.pages.HomePage;
 import com.automationexercise.pages.LoginPage;
 import com.automationexercise.pages.SignupPage;
@@ -9,30 +12,30 @@ import io.qameta.allure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 /**
  * LoginTest – Automated tests for TC-AE-002, TC-AE-003, TC-AE-004.
  *
+ * PHASE 2 CHANGES:
+ * - TC-AE-003 now uses @DataProvider: reads 2 invalid login scenarios from users.json
+ *   → TC-AE-003 runs TWICE automatically (once per data row)!
+ * - TC-AE-002 now fully asserts "ACCOUNT DELETED!" (step 10 of manual TC-AE-002)
+ * - @Listeners added → auto screenshot on fail
+ *
  * TEST INDEPENDENCE STRATEGY:
- * TC-002 (Login valid) and TC-004 (Logout) require a registered user.
- * Instead of sharing a user between tests (which creates test dependency),
- * each test registers its OWN unique user → performs its action → deletes account.
- *
- * This ensures:
- * - Tests can run in any order
- * - Tests can run in parallel (each has its own user)
- * - No test depends on another test running first
- *
- * PATTERN USED: Arrange → Act → Assert
+ * Each test registers its own unique user (timestamp-based email).
+ * Tests can run in any order or in parallel without conflicts.
  */
+@Listeners(TestListener.class)
 @Epic("Authentication")
 @Feature("Login and Logout")
 public class LoginTest extends BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(LoginTest.class);
 
-    // Shared registration data (non-sensitive defaults for test users)
+    // Registration profile constants (non-sensitive defaults for test users)
     private static final String TEST_PASSWORD   = "Automation@2026";
     private static final String TEST_FIRST_NAME = "Test";
     private static final String TEST_LAST_NAME  = "Automation";
@@ -55,21 +58,22 @@ public class LoginTest extends BaseTest {
     @Severity(SeverityLevel.CRITICAL)
     @Description(
         "Registers a new user, logs out, then logs in with the registered credentials. " +
-        "Verifies 'Logged in as username' is visible. Deletes account after test."
+        "Verifies 'Logged in as username' is visible (Step 8). " +
+        "Verifies 'ACCOUNT DELETED!' after deletion (Step 10)."
     )
     public void loginWithValidCredentials() {
         // ── ARRANGE ──────────────────────────────────────────────────────
         String uniqueEmail = RandomDataUtils.generateUniqueEmail();
         String uniqueName  = RandomDataUtils.generateName();
-        log.info("TC-AE-002 START | Test user email prefix: {}", uniqueEmail.split("@")[0]);
+        log.info("TC-AE-002 START | email prefix: {}", uniqueEmail.split("@")[0]);
 
-        // Step: Verify home page is visible
+        // Step 3: Verify home page is visible
         HomePage homePage = new HomePage(driver);
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible at start of test");
 
-        // Step: Register a new user (ensures test independence)
-        log.info("Step: Registering new test user to prepare login credentials");
+        // Steps 4-8: Register new user (pre-condition for login test)
+        log.info("ARRANGE: Registering test user");
         SignupPage signupPage = homePage
                 .clickLoginSignup()
                 .enterSignupName(uniqueName)
@@ -89,7 +93,7 @@ public class LoginTest extends BaseTest {
         Assert.assertTrue(homePage.isUserLoggedIn(),
                 "FAIL: User should be logged in after registration");
 
-        // Step: Logout to prepare for the actual login test
+        // Logout to prepare for actual login test
         LoginPage loginPage = homePage.clickLogout();
 
         // ── ACT ──────────────────────────────────────────────────────────
@@ -97,70 +101,91 @@ public class LoginTest extends BaseTest {
         Assert.assertTrue(loginPage.isLoginPageVisible(),
                 "FAIL: 'Login to your account' heading should be visible");
 
+        // Step 6: Enter correct email and password
+        // Step 7: Click 'login' button
         homePage = loginPage
                 .enterLoginEmail(uniqueEmail)
                 .enterLoginPassword(TEST_PASSWORD)
                 .clickLoginButton();
 
         // ── ASSERT ───────────────────────────────────────────────────────
+        // Step 8: Verify 'Logged in as username' is visible
         Assert.assertTrue(homePage.isUserLoggedIn(),
                 "FAIL: User should be logged in after submitting valid credentials");
 
         String loggedInUsername = homePage.getLoggedInUsername();
         Assert.assertFalse(loggedInUsername.isEmpty(),
                 "FAIL: 'Logged in as <username>' should be visible in nav");
+        log.info("TC-AE-002 PASS (login step) | Logged in as: '{}'", loggedInUsername);
 
-        log.info("TC-AE-002 PASS | Logged in as: '{}'", loggedInUsername);
-
-        // ── CLEANUP ──────────────────────────────────────────────────────
-        // Delete account so this email can't affect other test runs
+        // Step 9: Click 'Delete Account' button
         homePage.clickDeleteAccount();
-        log.info("TC-AE-002 CLEANUP: Account deleted");
+
+        // Step 10: Verify that 'ACCOUNT DELETED!' is visible
+        Assert.assertTrue(homePage.isAccountDeletedMessageVisible(),
+                "FAIL: 'ACCOUNT DELETED!' message should be visible after deletion");
+        log.info("TC-AE-002 PASS | Account deleted and confirmed");
     }
 
     // =====================================================================
-    // TC-AE-003: Login with incorrect email and password
+    // TC-AE-003: Login with incorrect email and password (Data-Driven)
     // =====================================================================
 
+    /**
+     * PHASE 2 UPGRADE: This test now uses @DataProvider.
+     *
+     * BEFORE (Phase 1): One hardcoded invalid credential per run
+     * AFTER  (Phase 2): Reads from users.json → "invalidLoginUsers" array (2 rows)
+     *                   TestNG runs this test TWICE automatically!
+     *
+     * Output shows:
+     *   loginShouldFailWithInvalidCredentials[0] → PASS (email: nonexistent.forever@...)
+     *   loginShouldFailWithInvalidCredentials[1] → PASS (email: another.invalid.user@...)
+     */
     @Test(
         description = "TC-AE-003 - Login User with incorrect email and password",
-        groups = {"smoke", "regression", "authentication", "negative"}
+        groups = {"smoke", "regression", "authentication", "negative"},
+        dataProvider = "invalidLoginData",
+        dataProviderClass = TestDataProvider.class
     )
     @Story("Login")
     @Severity(SeverityLevel.CRITICAL)
     @Description(
-        "Attempts login with non-existent credentials. " +
-        "Verifies error message 'Your email or password is incorrect!' is displayed."
+        "Attempts login with non-existent credentials loaded from users.json. " +
+        "Verifies error message 'Your email or password is incorrect!' is displayed. " +
+        "Runs once per data row in JSON (currently 2 scenarios)."
     )
-    public void loginShouldFailWithInvalidCredentials() {
-        // ── ARRANGE ──────────────────────────────────────────────────────
-        // Use a clearly fake email that can never be registered
-        String invalidEmail    = "nonexistent_" + System.currentTimeMillis() + "@fakeDomain.xyz";
-        String invalidPassword = "WrongPassword999";
-        log.info("TC-AE-003 START | Testing with invalid email: {}...", invalidEmail.substring(0, 15));
+    public void loginShouldFailWithInvalidCredentials(LoginData loginData) {
+        log.info("TC-AE-003 START | Testing with email: {}...", loginData.getEmail().split("@")[0]);
 
         // ── ACT ──────────────────────────────────────────────────────────
+        // Step 3: Verify home page
         HomePage homePage = new HomePage(driver);
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
+        // Step 4: Click Signup/Login
         LoginPage loginPage = homePage.clickLoginSignup();
+
+        // Step 5: Verify 'Login to your account' is visible
         Assert.assertTrue(loginPage.isLoginPageVisible(),
                 "FAIL: Login page should be visible");
 
+        // Step 6: Enter incorrect email and password | Step 7: Click 'login' button
         loginPage
-                .enterLoginEmail(invalidEmail)
-                .enterLoginPassword(invalidPassword)
+                .enterLoginEmail(loginData.getEmail())
+                .enterLoginPassword(loginData.getPassword())
                 .clickLoginButtonExpectingFailure();
 
         // ── ASSERT ───────────────────────────────────────────────────────
+        // Step 8: Verify error message is displayed
         Assert.assertTrue(loginPage.isLoginErrorVisible(),
                 "FAIL: Error message should appear for invalid credentials");
 
         String actualError = loginPage.getLoginErrorMessage();
         Assert.assertEquals(actualError,
-                "Your email or password is incorrect!",
-                "FAIL: Error message text does not match expected value");
+                loginData.getExpectedError(),
+                "FAIL: Error message text does not match expected value from JSON");
 
         log.info("TC-AE-003 PASS | Error message verified: '{}'", actualError);
     }
@@ -183,10 +208,13 @@ public class LoginTest extends BaseTest {
         // ── ARRANGE ──────────────────────────────────────────────────────
         String uniqueEmail = RandomDataUtils.generateUniqueEmail();
         String uniqueName  = RandomDataUtils.generateName();
-        log.info("TC-AE-004 START | Test user email prefix: {}", uniqueEmail.split("@")[0]);
+        log.info("TC-AE-004 START | email prefix: {}", uniqueEmail.split("@")[0]);
+
+        HomePage homePage = new HomePage(driver);
+        Assert.assertTrue(homePage.isHomePageVisible(),
+                "FAIL: Home page should be visible");
 
         // Register and login a new user
-        HomePage homePage = new HomePage(driver);
         SignupPage signupPage = homePage
                 .clickLoginSignup()
                 .enterSignupName(uniqueName)
@@ -207,16 +235,18 @@ public class LoginTest extends BaseTest {
                 "FAIL: User should be logged in before testing logout");
 
         // ── ACT ──────────────────────────────────────────────────────────
+        // Step 6: Click 'Logout' button
         log.info("TC-AE-004 ACT: Clicking Logout");
         LoginPage loginPage = homePage.clickLogout();
 
         // ── ASSERT ───────────────────────────────────────────────────────
+        // Step 7: Verify that user is navigated to login page
         Assert.assertTrue(loginPage.isLoginPageVisible(),
                 "FAIL: User should be redirected to the login page after logout");
 
         Assert.assertTrue(homePage.isLoginSignupLinkVisible(),
                 "FAIL: 'Signup / Login' nav link should reappear after logout");
 
-        log.info("TC-AE-004 PASS | User successfully logged out and redirected to login page");
+        log.info("TC-AE-004 PASS | User successfully logged out");
     }
 }

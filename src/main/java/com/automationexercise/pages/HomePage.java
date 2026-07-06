@@ -39,6 +39,15 @@ public class HomePage extends BasePage {
     /** Signup/Login link – only visible when NOT logged in */
     private static final By LOGIN_SIGNUP_LINK     = By.cssSelector("a[href='/login']");
 
+    /** Contact Us link */
+    private static final By CONTACT_US_LINK       = By.cssSelector("a[href='/contact_us']");
+
+    /** Products link */
+    private static final By PRODUCTS_LINK         = By.cssSelector("a[href='/products']");
+
+    /** Test Cases link */
+    private static final By TEST_CASES_LINK       = By.cssSelector("a[href='/test_cases']");
+
     /** "ACCOUNT DELETED!" confirmation heading */
     private static final By ACCOUNT_DELETED_MSG   = By.xpath("//b[text()='ACCOUNT DELETED!']");
 
@@ -135,6 +144,36 @@ public class HomePage extends BasePage {
     public HomePage clickDeleteAccount() {
         log.info("Clicking Delete Account link");
         click(DELETE_ACCOUNT_LINK);
+        return this;
+    }
+
+    /**
+     * Clicks "Contact us" in the nav bar.
+     * Returns ContactUsPage as the destination.
+     */
+    public ContactUsPage clickContactUs() {
+        log.info("Clicking Contact us link");
+        click(CONTACT_US_LINK);
+        return new ContactUsPage(driver);
+    }
+
+    /**
+     * Clicks "Products" in the nav bar.
+     * Returns ProductsPage as the destination.
+     */
+    public ProductsPage clickProducts() {
+        log.info("Clicking Products link");
+        click(PRODUCTS_LINK);
+        return new ProductsPage(driver);
+    }
+
+    /**
+     * Clicks "Test Cases" in the nav bar.
+     * No specific return type since it just navigates to a content page.
+     */
+    public HomePage clickTestCases() {
+        log.info("Clicking Test Cases link");
+        click(TEST_CASES_LINK);
         return this;
     }
 

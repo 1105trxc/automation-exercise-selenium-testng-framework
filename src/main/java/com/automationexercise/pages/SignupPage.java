@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.models.UserData;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -21,8 +22,7 @@ import org.slf4j.LoggerFactory;
  *
  * After filling all fields → Click "Create Account" → Account Created confirmation.
  *
- * NOTE: This is a minimal Phase 1 implementation.
- * Full implementation (with models/DataProvider) will be built in Phase 2.
+ * NOTE: Phase 2 adds fillRegistrationForm(UserData) overload for data-driven tests.
  */
 public class SignupPage extends BasePage {
 
@@ -166,11 +166,10 @@ public class SignupPage extends BasePage {
 
     /**
      * Fills all required registration fields in one call.
-     * Used in tests to keep the test body clean and readable.
+     * Uses primitive String parameters – kept for backward compatibility with LoginTest.
      *
      * DESIGN DECISION: This method only fills required fields.
      * Optional fields (Address2, Company) are skipped to keep tests lean.
-     * Phase 2 will use a UserData model to pass all fields flexibly.
      */
     public SignupPage fillRegistrationForm(String password,
                                            String firstName, String lastName,
@@ -191,6 +190,33 @@ public class SignupPage extends BasePage {
         enterCity(city);
         enterZipcode(zipcode);
         enterMobileNumber(mobile);
+        return this;
+    }
+
+    /**
+     * Fills all registration fields using a UserData model object.
+     * PHASE 2: Preferred method for data-driven tests (reads data from JSON).
+     *
+     * @param user UserData loaded from JSON via JsonDataReader
+     */
+    public SignupPage fillRegistrationForm(UserData user) {
+        log.info("Filling registration form from UserData: {} {}", user.getFirstName(), user.getLastName());
+        if ("Mrs".equalsIgnoreCase(user.getTitle())) {
+            selectTitleMrs();
+        } else {
+            selectTitleMr();
+        }
+        enterPassword(user.getPassword());
+        selectDateOfBirth(user.getDayOfBirth(), user.getMonthOfBirth(), user.getYearOfBirth());
+        checkNewsletter();
+        enterFirstName(user.getFirstName());
+        enterLastName(user.getLastName());
+        enterAddress(user.getAddress1());
+        selectCountry(user.getCountry());
+        enterState(user.getState());
+        enterCity(user.getCity());
+        enterZipcode(user.getZipcode());
+        enterMobileNumber(user.getMobile());
         return this;
     }
 
