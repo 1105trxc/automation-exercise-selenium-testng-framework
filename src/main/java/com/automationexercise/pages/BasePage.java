@@ -53,11 +53,41 @@ public abstract class BasePage {
 
     /**
      * Waits for element to be clickable, then clicks it.
-     * Prefer this over raw driver.findElement().click().
+     * Automatically handles Google Ads overlay if click is intercepted.
      */
     protected void click(By locator) {
-        waitUntilClickable(locator).click();
-        log.debug("Clicked: {}", locator);
+        try {
+            waitUntilClickable(locator).click();
+            log.debug("Clicked: {}", locator);
+        } catch (ElementClickInterceptedException e) {
+            log.warn("⚠️ Click intercepted by an ad for {}. Attempting to remove ads and retry...", locator);
+            removeAds();
+            try {
+                // Retry standard click after removing ads
+                waitUntilClickable(locator).click();
+                log.info("✅ Click succeeded after removing ads.");
+            } catch (Exception ex) {
+                log.warn("⚠️ Standard click still failed. Forcing click using JavaScript.");
+                jsClick(locator);
+            }
+        }
+    }
+
+    /**
+     * Removes Google Ads (iframes and specific classes) from the DOM.
+     * Useful for automationexercise.com which is heavy on ads.
+     */
+    protected void removeAds() {
+        try {
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+            js.executeScript(
+                "const ads = document.querySelectorAll('iframe, .adsbygoogle, [id^=ad_], [class^=ad-]');" +
+                "ads.forEach(ad => ad.remove());"
+            );
+            log.debug("Ads removed from DOM.");
+        } catch (Exception e) {
+            log.debug("Failed to remove ads: {}", e.getMessage());
+        }
     }
 
     /**
