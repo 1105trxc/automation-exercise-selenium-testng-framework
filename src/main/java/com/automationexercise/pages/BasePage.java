@@ -57,13 +57,14 @@ public abstract class BasePage {
      */
     protected void click(By locator) {
         try {
+            // Proactively dismiss vignette before clicking to prevent intercept
+            dismissVignetteAd();
             waitUntilClickable(locator).click();
             log.debug("Clicked: {}", locator);
         } catch (ElementClickInterceptedException e) {
-            log.warn("⚠️ Click intercepted by an ad for {}. Attempting to remove ads and retry...", locator);
+            log.warn("⚠️ Click intercepted for {}. Removing ads and retrying...", locator);
             removeAds();
             try {
-                // Retry standard click after removing ads
                 waitUntilClickable(locator).click();
                 log.info("✅ Click succeeded after removing ads.");
             } catch (Exception ex) {
@@ -75,18 +76,101 @@ public abstract class BasePage {
 
     /**
      * Removes Google Ads (iframes and specific classes) from the DOM.
+     * Also dismisses Google Vignette ads if present.
      * Useful for automationexercise.com which is heavy on ads.
      */
     protected void removeAds() {
+        // 1. Dismiss vignette overlay first (it blocks everything)
+        dismissVignetteAd();
+
+        // 2. Remove standard inline ads from DOM
         try {
             JavascriptExecutor js = (JavascriptExecutor) driver;
             js.executeScript(
-                "const ads = document.querySelectorAll('iframe, .adsbygoogle, [id^=ad_], [class^=ad-]');" +
-                "ads.forEach(ad => ad.remove());"
+                "var ads = document.querySelectorAll(" +
+                "'iframe[id*=google], iframe[src*=doubleclick], .adsbygoogle, " +
+                "[id^=ad_], [class^=ad-], [id*=aswift], [id*=google-ads]');" +
+                "if(ads) ads.forEach(function(ad) { if(ad.parentNode) ad.parentNode.removeChild(ad); });"
             );
-            log.debug("Ads removed from DOM.");
+            log.debug("Inline ads removed from DOM.");
         } catch (Exception e) {
-            log.debug("Failed to remove ads: {}", e.getMessage());
+            log.debug("Failed to remove inline ads: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Dismisses Google Vignette ads – the full-screen overlay that appears
+     * when navigating to automationexercise.com.
+     *
+     * HOW TO IDENTIFY VIGNETTE:
+     * - URL contains "#google_vignette" hash fragment
+     * - A full-screen iframe/overlay appears over the page
+     * - Has a "Close" button accessible via keyboard or click
+     *
+     * STRATEGY (3-level fallback):
+     * 1. Try clicking the Close button (various CSS selectors)
+     * 2. Press Escape key (sometimes dismisses overlay)
+     * 3. Navigate to the clean URL (strip #google_vignette hash)
+     */
+    protected void dismissVignetteAd() {
+        String currentUrl = driver.getCurrentUrl();
+        if (!currentUrl.contains("google_vignette") && !currentUrl.contains("#google")) {
+            return; // No vignette present – skip
+        }
+
+        log.warn("🔔 Google Vignette ad detected (URL: {}). Attempting to dismiss...", currentUrl);
+
+        // Strategy 1: Try clicking the visible "Close" button
+        // The vignette close button can appear in multiple forms
+        By[] closeButtonLocators = {
+            By.xpath("//div[contains(@id,'dismiss')]//button"),
+            By.xpath("//button[contains(@aria-label,'Close')]"),
+            By.xpath("//button[contains(@aria-label,'close')]"),
+            By.xpath("//*[text()='Close'][@role='button' or self::button]"),
+            By.xpath("//span[@id='dismiss-button']"),
+            By.id("dismiss-button"),
+            By.cssSelector("[data-dismiss], .ad-close, .close-btn, #ad_close"),
+        };
+
+        for (By closeLocator : closeButtonLocators) {
+            try {
+                WebElement closeBtn = new WebDriverWait(driver, Duration.ofSeconds(2))
+                    .until(ExpectedConditions.elementToBeClickable(closeLocator));
+                closeBtn.click();
+                log.info("✅ Vignette dismissed by clicking Close button.");
+                return;
+            } catch (Exception ignored) {
+                // Try next locator
+            }
+        }
+
+        // Strategy 2: Press Escape key
+        try {
+            log.debug("Trying Escape key to dismiss vignette...");
+            driver.findElement(By.tagName("body")).sendKeys(Keys.ESCAPE);
+            java.lang.Thread.sleep(500); // Short pause to let overlay respond
+            if (!driver.getCurrentUrl().contains("google_vignette")) {
+                log.info("✅ Vignette dismissed by Escape key.");
+                return;
+            }
+        } catch (Exception ignored) {}
+
+        // Strategy 3 (last resort): Strip the #google_vignette hash and navigate to clean URL
+        try {
+            String cleanUrl = currentUrl.contains("#")
+                ? currentUrl.substring(0, currentUrl.indexOf("#"))
+                : currentUrl;
+            log.warn("⚠️ Navigating to clean URL to bypass vignette: {}", cleanUrl);
+            driver.navigate().to(cleanUrl);
+
+            // Wait for page to be stable after navigation
+            new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.not(
+                    ExpectedConditions.urlContains("google_vignette")
+                ));
+            log.info("✅ Vignette bypassed via clean URL navigation.");
+        } catch (Exception e) {
+            log.error("❌ Failed to dismiss vignette ad. Test may be unstable. Error: {}", e.getMessage());
         }
     }
 
@@ -130,8 +214,14 @@ public abstract class BasePage {
     /**
      * Checks if an element is displayed within a custom timeout (seconds).
      * Use this for conditional checks where you don't want the full 15s wait.
+     *
+     * NOTE: Proactively dismisses Vignette ads before waiting.
+     * This prevents false negatives when an ad overlay blocks page content
+     * right after navigation (e.g., after clickContinue → home page).
      */
     protected boolean isDisplayed(By locator, int timeoutSeconds) {
+        // Dismiss vignette overlay first so it doesn't block the check
+        dismissVignetteAd();
         try {
             new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds))
                     .until(ExpectedConditions.visibilityOfElementLocated(locator));
