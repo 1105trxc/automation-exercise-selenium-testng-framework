@@ -1,5 +1,9 @@
 # Review và Đề xuất Tối ưu `BasePage` và `BaseTest`
 
+> **Cập nhật:** Tài liệu này được viết trước khi refactor (Phase 2 review).  
+> Trạng thái thực hiện được ghi nhận tại mỗi mục.  
+> Xem chi tiết ở: `docs/learning/phase-2-walkthrough.md`
+
 ## 1. Mục đích tài liệu
 
 Tài liệu này tổng hợp toàn bộ phần review kỹ thuật đối với hai file:
@@ -878,39 +882,43 @@ src/test/java/com/automationexercise/
 
 # 8. Thứ tự refactor đề xuất
 
-## Ưu tiên 1: sửa ngay
+## Ưu tiên 1 — sửa ngay vì ảnh hưởng độ tin cậy
 
-1. Không log dữ liệu nhập trong `type()`
-2. Loại `protected WebDriver driver` khỏi `BaseTest`
-3. Tách advertisement handling khỏi `BasePage`
-4. Loại `catch (Exception)` trong `click()`
-5. Không tự động JavaScript click mọi lỗi
-6. Sửa `isDisplayed()`
-7. Loại `Thread.sleep()`
-
----
-
-## Ưu tiên 2: sửa trước khi đạt 10 test cases
-
-1. Chuyển explicit wait sang config
-2. Bỏ hardcode base URL
-3. Sửa browser priority
-4. Dùng wait trong `scrollIntoView()`
-5. Dùng wait trong `jsClick()`
-6. Chuyển `BaseTest` thành abstract
-7. Validate driver không null
+| # | Hành động | Trạng thái |
+|---|---|---|
+| 1 | Tách logic quảng cáo khỏi `BasePage` | ✅ Done – `AdHandler.java` |
+| 2 | Sửa `click()`, bỏ `catch (Exception)` và JS fallback tự động | ✅ Done |
+| 3 | Không log nội dung thật trong `type()` | ✅ Done – chỉ log số ký tự |
+| 4 | Loại `Thread.sleep()` | ✅ Done – replaced bằng WebDriverWait |
+| 5 | Làm rõ hai behavior: `isDisplayedNow()` và `isDisplayed(locator, timeout)` | ✅ Done |
+| 6 | Hạn chế việc xóa DOM quảng cáo bằng selector quá rộng | ✅ Done – `hideInlineAds()` dùng selector hẹp |
 
 ---
 
-## Ưu tiên 3: thực hiện sau
+## Ưu tiên 2 — trước khi framework lớn hoặc bật parallel
 
-1. Custom exception cho element action
-2. Log test method rõ ràng
-3. Window và tab helper
-4. Download helper
-5. Parallel execution
-6. FluentWait nếu có nhiều stale element
-7. Mở rộng browser support
+| # | Hành động | Trạng thái |
+|---|---|---|
+| 1 | Thay field `driver` bằng `driver()` | ✅ Done – parallel-safe |
+| 2 | Sửa browser priority: CLI trước XML | ✅ Done |
+| 3 | Cho `scrollIntoView()` dùng wait | ✅ Done |
+| 4 | Cho `jsClick()` dùng wait | ✅ Done |
+| 5 | Kiểm tra `DriverFactory.quitDriver()` có `finally` và `ThreadLocal.remove()` | ✅ Done |
+| 6 | Đổi `BaseTest` thành abstract trong cùng lần refactor | ✅ Done |
+| 7 | Validate driver không null | ✅ Done – `Objects.requireNonNull()` |
+
+---
+
+## Ưu tiên 3 — nâng cao tính cấu hình
+
+| # | Hành động | Trạng thái |
+|---|---|---|
+| 1 | `getRequired("baseUrl")` | 🔲 Planned |
+| 2 | Timeout đọc từ config | 🔲 Planned |
+| 3 | `Objects.requireNonNull(driver)` | ✅ Done – trong BasePage constructor |
+| 4 | Custom exception | 🔲 Planned |
+| 5 | Tối ưu logging test lifecycle | 🔲 Planned |
+| 6 | Chuẩn bị parallel suite | 🔲 Planned |
 
 ---
 
