@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AdHandler;
 import com.automationexercise.constants.FrameworkConstants;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
@@ -10,26 +11,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  * BasePage – Abstract base class for all Page Objects.
  *
- * WHY THIS CLASS EXISTS:
- * Every page needs to click, type, wait, scroll, etc.
- * Instead of duplicating these actions in every page class,
- * BasePage provides them as protected methods that all pages inherit.
+ * TRÁCH NHIỆM:
+ * - Cung cấp các thao tác element chung: click, type, getText, wait, scroll...
+ * - Không chứa locator (thuộc về từng page class cụ thể)
+ * - Không chứa assertion (thuộc về test class)
+ * - Không chứa test data
  *
- * RULES:
- * - BasePage must NOT contain locators (those belong in specific page classes)
- * - BasePage must NOT contain assertions (those belong in test classes)
- * - BasePage must NOT contain test data
- * - Every method must have a single, clear purpose
+ * DESIGN DECISIONS:
  *
- * HOW TO USE:
- *   public class LoginPage extends BasePage {
- *       public LoginPage(WebDriver driver) { super(driver); }
- *       // Use: click(loginButton), type(emailInput, text), etc.
- *   }
+ * 1. click() KHÔNG tự động xử lý quảng cáo
+ *    Lý do: Tự động fallback che giấu lỗi thật (locator sai, element disabled, v.v.)
+ *    Page class gọi handleVignette() hoặc AdHandler trước khi click nếu cần.
+ *
+ * 2. clickWithJsFallback() chỉ dùng khi đã biết thực sự cần
+ *    Lý do: JS click bypass validation của browser, dễ bỏ qua lỗi UI thật.
+ *
+ * 3. isDisplayedNow() vs isDisplayed()
+ *    - isDisplayedNow(): kiểm tra tức thì, không wait. Dùng cho negative assertion.
+ *    - isDisplayed(locator): wait với default timeout. Dùng cho positive assertion.
+ *    - isDisplayed(locator, seconds): explicit timeout. Dùng khi biết cần bao lâu.
+ *
+ * 4. type() không log nội dung nhập
+ *    Lý do: Tránh lộ password và dữ liệu nhạy cảm trong log file.
  */
 public abstract class BasePage {
 
@@ -37,152 +45,56 @@ public abstract class BasePage {
     protected final WebDriverWait wait;
     private static final Logger log = LoggerFactory.getLogger(BasePage.class);
 
-    /**
-     * Constructor: every Page Object receives the driver and creates its own wait.
-     * Using Explicit Wait (not implicit) as per framework policy.
-     */
     protected BasePage(WebDriver driver) {
-        this.driver = driver;
+        this.driver = Objects.requireNonNull(driver, "WebDriver must not be null.");
         this.wait = new WebDriverWait(driver,
                 Duration.ofSeconds(FrameworkConstants.EXPLICIT_WAIT_SECONDS));
     }
 
-    // =====================================================================
+    // =========================================================================
     // ELEMENT ACTIONS
-    // =====================================================================
+    // =========================================================================
 
     /**
      * Waits for element to be clickable, then clicks it.
-     * Automatically handles Google Ads overlay if click is intercepted.
+     *
+     * KHÔNG tự động xử lý quảng cáo hay fallback JS.
+     * Nếu click bị intercept bởi quảng cáo, gọi handleVignette() trước,
+     * hoặc dùng clickWithJsFallback() ở nơi đã biết thực sự cần JS fallback.
      */
     protected void click(By locator) {
+        waitUntilClickable(locator).click();
+        log.debug("Clicked: {}", locator);
+    }
+
+    /**
+     * Giống click() nhưng có fallback sang JavaScript nếu bị ElementClickInterceptedException.
+     *
+     * CHỈ dùng khi đã xác định click bị intercept bởi overlay không thể tránh khác.
+     * Ghi lại lý do trong comment tại nơi gọi.
+     */
+    protected void clickWithJsFallback(By locator) {
         try {
-            // Proactively dismiss vignette before clicking to prevent intercept
-            dismissVignetteAd();
             waitUntilClickable(locator).click();
             log.debug("Clicked: {}", locator);
         } catch (ElementClickInterceptedException e) {
-            log.warn("⚠️ Click intercepted for {}. Removing ads and retrying...", locator);
-            removeAds();
-            try {
-                waitUntilClickable(locator).click();
-                log.info("✅ Click succeeded after removing ads.");
-            } catch (Exception ex) {
-                log.warn("⚠️ Standard click still failed. Forcing click using JavaScript.");
-                jsClick(locator);
-            }
-        }
-    }
-
-    /**
-     * Removes Google Ads (iframes and specific classes) from the DOM.
-     * Also dismisses Google Vignette ads if present.
-     * Useful for automationexercise.com which is heavy on ads.
-     */
-    protected void removeAds() {
-        // 1. Dismiss vignette overlay first (it blocks everything)
-        dismissVignetteAd();
-
-        // 2. Remove standard inline ads from DOM
-        try {
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-            js.executeScript(
-                "var ads = document.querySelectorAll(" +
-                "'iframe[id*=google], iframe[src*=doubleclick], .adsbygoogle, " +
-                "[id^=ad_], [class^=ad-], [id*=aswift], [id*=google-ads]');" +
-                "if(ads) ads.forEach(function(ad) { if(ad.parentNode) ad.parentNode.removeChild(ad); });"
-            );
-            log.debug("Inline ads removed from DOM.");
-        } catch (Exception e) {
-            log.debug("Failed to remove inline ads: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Dismisses Google Vignette ads – the full-screen overlay that appears
-     * when navigating to automationexercise.com.
-     *
-     * HOW TO IDENTIFY VIGNETTE:
-     * - URL contains "#google_vignette" hash fragment
-     * - A full-screen iframe/overlay appears over the page
-     * - Has a "Close" button accessible via keyboard or click
-     *
-     * STRATEGY (3-level fallback):
-     * 1. Try clicking the Close button (various CSS selectors)
-     * 2. Press Escape key (sometimes dismisses overlay)
-     * 3. Navigate to the clean URL (strip #google_vignette hash)
-     */
-    protected void dismissVignetteAd() {
-        String currentUrl = driver.getCurrentUrl();
-        if (!currentUrl.contains("google_vignette") && !currentUrl.contains("#google")) {
-            return; // No vignette present – skip
-        }
-
-        log.warn("🔔 Google Vignette ad detected (URL: {}). Attempting to dismiss...", currentUrl);
-
-        // Strategy 1: Try clicking the visible "Close" button
-        // The vignette close button can appear in multiple forms
-        By[] closeButtonLocators = {
-            By.xpath("//div[contains(@id,'dismiss')]//button"),
-            By.xpath("//button[contains(@aria-label,'Close')]"),
-            By.xpath("//button[contains(@aria-label,'close')]"),
-            By.xpath("//*[text()='Close'][@role='button' or self::button]"),
-            By.xpath("//span[@id='dismiss-button']"),
-            By.id("dismiss-button"),
-            By.cssSelector("[data-dismiss], .ad-close, .close-btn, #ad_close"),
-        };
-
-        for (By closeLocator : closeButtonLocators) {
-            try {
-                WebElement closeBtn = new WebDriverWait(driver, Duration.ofSeconds(2))
-                    .until(ExpectedConditions.elementToBeClickable(closeLocator));
-                closeBtn.click();
-                log.info("✅ Vignette dismissed by clicking Close button.");
-                return;
-            } catch (Exception ignored) {
-                // Try next locator
-            }
-        }
-
-        // Strategy 2: Press Escape key
-        try {
-            log.debug("Trying Escape key to dismiss vignette...");
-            driver.findElement(By.tagName("body")).sendKeys(Keys.ESCAPE);
-            java.lang.Thread.sleep(500); // Short pause to let overlay respond
-            if (!driver.getCurrentUrl().contains("google_vignette")) {
-                log.info("✅ Vignette dismissed by Escape key.");
-                return;
-            }
-        } catch (Exception ignored) {}
-
-        // Strategy 3 (last resort): Strip the #google_vignette hash and navigate to clean URL
-        try {
-            String cleanUrl = currentUrl.contains("#")
-                ? currentUrl.substring(0, currentUrl.indexOf("#"))
-                : currentUrl;
-            log.warn("⚠️ Navigating to clean URL to bypass vignette: {}", cleanUrl);
-            driver.navigate().to(cleanUrl);
-
-            // Wait for page to be stable after navigation
-            new WebDriverWait(driver, Duration.ofSeconds(10))
-                .until(ExpectedConditions.not(
-                    ExpectedConditions.urlContains("google_vignette")
-                ));
-            log.info("✅ Vignette bypassed via clean URL navigation.");
-        } catch (Exception e) {
-            log.error("❌ Failed to dismiss vignette ad. Test may be unstable. Error: {}", e.getMessage());
+            log.warn("⚠️ Click intercepted for {}. Using JS fallback (verify this is expected).", locator);
+            jsClick(locator);
         }
     }
 
     /**
      * Waits for element to be visible, clears it, then types the text.
-     * NEVER use Thread.sleep() to wait before typing.
+     *
+     * KHÔNG log nội dung nhập vào để tránh lộ password trong log file.
+     * Chỉ log số ký tự để debug khi cần thiết.
      */
     protected void type(By locator, String text) {
+        Objects.requireNonNull(text, "Text to type must not be null.");
         WebElement element = waitUntilVisible(locator);
         element.clear();
         element.sendKeys(text);
-        log.debug("Typed into {}: [{}]", locator, text);
+        log.debug("Typed into {} ({} chars).", locator, text.length());
     }
 
     /**
@@ -199,29 +111,52 @@ public abstract class BasePage {
         return waitUntilVisible(locator).getAttribute(attribute);
     }
 
+    // =========================================================================
+    // ELEMENT VISIBILITY CHECKS
+    // =========================================================================
+
     /**
-     * Checks if an element is displayed using the default explicit wait.
-     * Returns false instead of throwing if element doesn't exist.
+     * Kiểm tra TỨC THÌ (không wait) xem element có đang hiển thị không.
+     *
+     * KHI NÀO DÙNG:
+     * - Negative assertion (kiểm tra element KHÔNG tồn tại)
+     * - Conditional check khi element đã có thể có mặt
+     *
+     * VÍ DỤ:
+     *   Assert.assertFalse(page.isDisplayedNow(LOGIN_BUTTON), "Should be logged out");
+     *
+     * KHÔNG dùng cho positive assertion vì không wait → false negative nếu page chưa load.
      */
-    protected boolean isDisplayed(By locator) {
-        try {
-            return driver.findElement(locator).isDisplayed();
-        } catch (NoSuchElementException | StaleElementReferenceException e) {
-            return false;
-        }
+    protected boolean isDisplayedNow(By locator) {
+        return driver.findElements(locator)
+                .stream()
+                .anyMatch(WebElement::isDisplayed);
     }
 
     /**
-     * Checks if an element is displayed within a custom timeout (seconds).
-     * Use this for conditional checks where you don't want the full 15s wait.
+     * Waits up to DEFAULT timeout, returns true nếu element visible trong thời gian đó.
      *
-     * NOTE: Proactively dismisses Vignette ads before waiting.
-     * This prevents false negatives when an ad overlay blocks page content
-     * right after navigation (e.g., after clickContinue → home page).
+     * KHI NÀO DÙNG:
+     * - Positive assertion (kiểm tra element PHẢI tồn tại)
+     * - Gọi khi không biết chắc tốc độ page load
+     *
+     * VÍ DỤ:
+     *   Assert.assertTrue(homePage.isUserLoggedIn(), "Should be logged in");
+     */
+    protected boolean isDisplayed(By locator) {
+        return isDisplayed(locator, FrameworkConstants.EXPLICIT_WAIT_SECONDS);
+    }
+
+    /**
+     * Waits up to custom timeout (seconds), returns true nếu element visible.
+     *
+     * KHI NÀO DÙNG:
+     * - Khi biết element cần ít/nhiều thời gian hơn default (ví dụ: slow network = 20s)
+     *
+     * VÍ DỤ:
+     *   boolean hasLogoutLink = isDisplayed(LOGOUT_LINK, 5);
      */
     protected boolean isDisplayed(By locator, int timeoutSeconds) {
-        // Dismiss vignette overlay first so it doesn't block the check
-        dismissVignetteAd();
         try {
             new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds))
                     .until(ExpectedConditions.visibilityOfElementLocated(locator));
@@ -231,9 +166,24 @@ public abstract class BasePage {
         }
     }
 
-    // =====================================================================
-    // WAIT ACTIONS (Explicit Waits)
-    // =====================================================================
+    // =========================================================================
+    // AD HANDLING – proxy đến AdHandler (logic nằm ở AdHandler)
+    // =========================================================================
+
+    /**
+     * Gọi AdHandler để dismiss Google Vignette ad nếu đang hiện.
+     *
+     * Page class gọi method này ở những nơi mà vignette có thể xuất hiện,
+     * ví dụ: sau khi navigate về trang chủ.
+     * BasePage không tự động gọi trong mọi click() hay isDisplayed().
+     */
+    protected void handleVignette() {
+        AdHandler.dismissIfPresent(driver);
+    }
+
+    // =========================================================================
+    // WAIT ACTIONS
+    // =========================================================================
 
     /** Waits until element is visible. Returns the element when visible. */
     protected WebElement waitUntilVisible(By locator) {
@@ -265,35 +215,35 @@ public abstract class BasePage {
         wait.until(ExpectedConditions.textToBePresentInElementLocated(locator, expectedText));
     }
 
-    // =====================================================================
+    // =========================================================================
     // SCROLL ACTIONS
-    // =====================================================================
+    // =========================================================================
 
-    /** Scrolls element into center of viewport using JavaScript. */
+    /**
+     * Scrolls element into center of viewport using JavaScript.
+     * Dùng waitUntilVisible() để đảm bảo element đã tồn tại trong DOM trước khi scroll.
+     */
     protected void scrollIntoView(By locator) {
-        WebElement element = driver.findElement(locator);
-        ((JavascriptExecutor) driver)
-                .executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
+        WebElement element = waitUntilVisible(locator);
+        js().executeScript("arguments[0].scrollIntoView({block: 'center'});", element);
         log.debug("Scrolled into view: {}", locator);
     }
 
     /** Scrolls to the bottom of the page. */
     protected void scrollToBottom() {
-        ((JavascriptExecutor) driver)
-                .executeScript("window.scrollTo(0, document.body.scrollHeight);");
-        log.debug("Scrolled to bottom of page");
+        js().executeScript("window.scrollTo(0, document.body.scrollHeight);");
+        log.debug("Scrolled to bottom of page.");
     }
 
     /** Scrolls to the top of the page. */
     protected void scrollToTop() {
-        ((JavascriptExecutor) driver)
-                .executeScript("window.scrollTo(0, 0);");
-        log.debug("Scrolled to top of page");
+        js().executeScript("window.scrollTo(0, 0);");
+        log.debug("Scrolled to top of page.");
     }
 
-    // =====================================================================
+    // =========================================================================
     // HOVER ACTIONS
-    // =====================================================================
+    // =========================================================================
 
     /** Moves mouse cursor over an element (triggers hover state). */
     protected void hoverOver(By locator) {
@@ -302,9 +252,9 @@ public abstract class BasePage {
         log.debug("Hovered over: {}", locator);
     }
 
-    // =====================================================================
+    // =========================================================================
     // DROPDOWN ACTIONS
-    // =====================================================================
+    // =========================================================================
 
     /** Selects a dropdown option by its visible text. */
     protected void selectByVisibleText(By locator, String visibleText) {
@@ -316,25 +266,28 @@ public abstract class BasePage {
         new Select(waitUntilVisible(locator)).selectByValue(value);
     }
 
-    // =====================================================================
-    // JAVASCRIPT ACTIONS (use sparingly – only when normal click fails)
-    // =====================================================================
+    // =========================================================================
+    // JAVASCRIPT ACTIONS
+    // =========================================================================
 
     /**
      * Clicks an element using JavaScript.
-     * Use ONLY when: element is covered by another element (overlay),
-     * or when normal click doesn't trigger the expected action.
-     * Document WHY you used jsClick instead of regular click.
+     *
+     * CHỈ dùng khi:
+     * - Element bị che bởi overlay không thể dismiss
+     * - Normal click() đã thất bại và đã có lý do rõ ràng
+     *
+     * Dùng waitUntilClickable() để đảm bảo element đã sẵn sàng trước khi JS click.
      */
     protected void jsClick(By locator) {
-        WebElement element = driver.findElement(locator);
-        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+        WebElement element = waitUntilClickable(locator);
+        js().executeScript("arguments[0].click();", element);
         log.debug("JS clicked: {}", locator);
     }
 
-    // =====================================================================
+    // =========================================================================
     // NAVIGATION HELPERS
-    // =====================================================================
+    // =========================================================================
 
     /** Returns the current browser URL. */
     protected String getCurrentUrl() {
@@ -352,5 +305,14 @@ public abstract class BasePage {
      */
     protected void acceptAlert() {
         wait.until(ExpectedConditions.alertIsPresent()).accept();
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    /** Private helper để cast driver sang JavascriptExecutor. */
+    private JavascriptExecutor js() {
+        return (JavascriptExecutor) driver;
     }
 }

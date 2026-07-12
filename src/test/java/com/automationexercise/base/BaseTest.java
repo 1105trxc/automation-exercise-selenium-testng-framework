@@ -1,5 +1,6 @@
 package com.automationexercise.base;
 
+import com.automationexercise.components.AdHandler;
 import com.automationexercise.config.ConfigManager;
 import com.automationexercise.driver.BrowserType;
 import com.automationexercise.driver.DriverFactory;
@@ -12,78 +13,115 @@ import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 
 /**
- * BaseTest – Parent class for all test classes.
+ * BaseTest – Abstract parent class cho tất cả test class.
  *
- * RESPONSIBILITIES:
- * - @BeforeMethod: Initialize WebDriver, navigate to base URL
- * - @AfterMethod:  Quit WebDriver, clean up resources
+ * TRÁCH NHIỆM:
+ * - @BeforeMethod: Khởi động WebDriver, navigate đến baseUrl
+ * - @AfterMethod: Đóng WebDriver, dọn dẹp resource
  *
- * RULES (from Blueprint):
- * - No business logic here
- * - No locators here
- * - No test data here
- * - Just setup and teardown
+ * QUY TẮC:
+ * - Không chứa business logic
+ * - Không chứa locator
+ * - Không chứa test data
+ * - Chỉ setup và teardown
  *
- * HOW TO USE:
+ * TẠI SAO LÀ ABSTRACT:
+ * BaseTest là base class, không đại diện cho test cụ thể nào.
+ * Đặt là abstract ngăn việc khởi tạo BaseTest() trực tiếp.
+ *
+ * TẠI SAO DÙNG driver() METHOD THAY VÌ FIELD:
+ * DriverFactory lưu driver trong ThreadLocal.
+ * Nếu lưu thêm vào field instance: Thread 1 và Thread 2 cùng extend BaseTest
+ * có thể ghi đè lẫn nhau khi chạy parallel="methods".
+ * driver() method luôn lấy đúng driver của thread hiện tại từ ThreadLocal.
+ *
+ * BROWSER SELECTION PRIORITY (từ cao đến thấp):
+ * 1. CLI System property: -Dbrowser=firefox   (override tất cả)
+ * 2. TestNG XML parameter: <parameter name="browser" value="chrome"/>
+ * 3. Config file: local.properties browser=chrome
+ * 4. Default: chrome
+ *
+ * VÍ DỤ SỬ DỤNG:
  *   public class LoginTest extends BaseTest {
  *       @Test
  *       public void myTest() {
- *           // 'driver' is available from BaseTest
- *           HomePage homePage = new HomePage(driver);
+ *           HomePage homePage = new HomePage(driver());
  *       }
  *   }
- *
- * BROWSER SELECTION PRIORITY:
- *   1. TestNG suite XML parameter: <parameter name="browser" value="firefox"/>
- *   2. System property: -Dbrowser=firefox
- *   3. local.properties: browser=chrome
- *   4. Hardcoded default: chrome
  */
-public class BaseTest {
+public abstract class BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(BaseTest.class);
 
-    /** Protected so all test subclasses can access the driver. */
-    protected WebDriver driver;
+    /**
+     * Trả về WebDriver của thread hiện tại từ ThreadLocal trong DriverFactory.
+     *
+     * Dùng method thay vì field để đảm bảo parallel-safe:
+     * mỗi lần gọi driver() luôn lấy đúng instance của thread đang chạy.
+     */
+    protected WebDriver driver() {
+        return DriverFactory.getDriver();
+    }
 
     /**
-     * Runs before each @Test method.
+     * Chạy trước mỗi @Test method.
      *
-     * @param browserParam Browser name from TestNG suite XML (optional).
-     *                     If not provided via XML, falls back to config.
+     * @param browserParam Browser từ TestNG XML (optional, có thể null).
+     *                     CLI -Dbrowser sẽ override giá trị này.
      */
     @BeforeMethod(alwaysRun = true)
     @Parameters("browser")
-    public void setUp(@Optional String browserParam) {
-        // Determine which browser to use
-        String browserName = (browserParam != null && !browserParam.isBlank())
-                ? browserParam
-                : ConfigManager.get("browser", "chrome");
-
+    public void setUp(@Optional("") String browserParam) {
+        String browserName = resolveBrowser(browserParam);
         BrowserType browserType = BrowserType.fromString(browserName);
 
         log.info("══════════════════════════════════════════════");
         log.info("TEST SETUP: Initializing browser → {}", browserType);
         log.info("══════════════════════════════════════════════");
 
-        // Initialize driver (stored in ThreadLocal inside DriverFactory)
         DriverFactory.initDriver(browserType);
-        driver = DriverFactory.getDriver();
 
-        // Navigate to the application base URL
         String baseUrl = ConfigManager.get("baseUrl", "https://automationexercise.com");
-        driver.get(baseUrl);
+        driver().get(baseUrl);
         log.info("Navigated to: {}", baseUrl);
+
+        // Dismiss vignette ad nếu xuất hiện ngay khi mở trang chủ
+        AdHandler.dismissIfPresent(driver());
     }
 
     /**
-     * Runs after each @Test method, regardless of pass/fail (alwaysRun = true).
-     * CRITICAL: Must always run to prevent browser process leaks.
+     * Chạy sau mỗi @Test method, kể cả khi test fail (alwaysRun = true).
+     * CRITICAL: Phải luôn chạy để tránh browser process leak.
      */
     @AfterMethod(alwaysRun = true)
     public void tearDown() {
         log.info("TEST TEARDOWN: Closing browser");
         DriverFactory.quitDriver();
         log.info("══════════════════════════════════════════════");
+    }
+
+    /**
+     * Xác định browser theo thứ tự ưu tiên:
+     * CLI System property → TestNG XML param → config file → default chrome.
+     *
+     * CLI System property (-Dbrowser) luôn được ưu tiên cao nhất để
+     * pipeline CI có thể override cấu hình static trong XML.
+     */
+    private String resolveBrowser(String browserParam) {
+        // Priority 1: CLI override (-Dbrowser=firefox)
+        String systemBrowser = System.getProperty("browser");
+        if (systemBrowser != null && !systemBrowser.isBlank()) {
+            log.debug("Browser resolved from system property: {}", systemBrowser);
+            return systemBrowser;
+        }
+
+        // Priority 2: TestNG XML parameter
+        if (browserParam != null && !browserParam.isBlank()) {
+            log.debug("Browser resolved from TestNG XML parameter: {}", browserParam);
+            return browserParam;
+        }
+
+        // Priority 3: Config file + Default
+        return ConfigManager.get("browser", "chrome");
     }
 }

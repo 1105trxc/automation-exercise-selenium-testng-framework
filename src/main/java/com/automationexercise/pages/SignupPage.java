@@ -242,10 +242,14 @@ public class SignupPage extends BasePage {
     /**
      * Clicks "Continue" after account creation confirmation.
      * Navigates to HomePage.
+     *
+     * NOTE: Gọi handleVignette() vì sau khi navigate về trang chủ,
+     * Google Vignette ad có thể xuất hiện và block mọi tương tác tiếp theo.
      */
     public HomePage clickContinue() {
         log.info("Clicking Continue after account creation");
         click(CONTINUE_BUTTON);
+        handleVignette(); // Dismiss vignette nếu xuất hiện khi về home page
         return new HomePage(driver);
     }
 }

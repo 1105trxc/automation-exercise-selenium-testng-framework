@@ -94,12 +94,23 @@ public final class DriverFactory {
      */
     public static void quitDriver() {
         WebDriver driver = driverThreadLocal.get();
-        if (driver != null) {
-            driver.quit();
-            driverThreadLocal.remove();
-            log.info("Driver closed and removed from ThreadLocal.");
-        } else {
+
+        if (driver == null) {
             log.warn("quitDriver() called but no driver was found for this thread.");
+            return;
+        }
+
+        // IMPORTANT: ThreadLocal.remove() MUST run even if driver.quit() throws.
+        // Without finally, a failed quit() leaves a stale driver reference in ThreadLocal,
+        // which causes NoSuchSessionException or memory leaks in the next test.
+        try {
+            driver.quit();
+            log.info("Driver closed successfully.");
+        } catch (Exception e) {
+            log.warn("Exception while quitting driver (will still remove from ThreadLocal): {}", e.getMessage());
+        } finally {
+            driverThreadLocal.remove();
+            log.debug("Driver removed from ThreadLocal.");
         }
     }
 

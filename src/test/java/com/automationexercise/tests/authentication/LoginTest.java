@@ -68,7 +68,7 @@ public class LoginTest extends BaseTest {
         log.info("TC-AE-002 START | email prefix: {}", uniqueEmail.split("@")[0]);
 
         // Step 3: Verify home page is visible
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible at start of test");
 
@@ -160,7 +160,7 @@ public class LoginTest extends BaseTest {
 
         // ── ACT ──────────────────────────────────────────────────────────
         // Step 3: Verify home page
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
@@ -210,7 +210,7 @@ public class LoginTest extends BaseTest {
         String uniqueName  = RandomDataUtils.generateName();
         log.info("TC-AE-004 START | email prefix: {}", uniqueEmail.split("@")[0]);
 
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 

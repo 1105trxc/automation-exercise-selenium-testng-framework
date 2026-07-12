@@ -67,7 +67,7 @@ public class RegistrationTest extends BaseTest {
 
         // ── ACT ──────────────────────────────────────────────────────────
         // Step 3: Verify home page is visible
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible at start of test");
 
@@ -143,7 +143,7 @@ public class RegistrationTest extends BaseTest {
 
         // Step 1: Register user first (pre-condition)
         log.info("ARRANGE: Registering first user to occupy the email");
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         SignupPage signupPage = homePage
                 .clickLoginSignup()
                 .enterSignupName(uniqueName)

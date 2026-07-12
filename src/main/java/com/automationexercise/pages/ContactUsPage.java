@@ -125,10 +125,13 @@ public class ContactUsPage extends BasePage {
 
     /**
      * Clicks "Home" button on success page → navigates back to home.
+     *
+     * NOTE: Gọi handleVignette() vì navigate về trang chủ có thể trigger vignette ad.
      */
     public HomePage clickHome() {
         log.info("Clicking Home button after contact form submission");
         click(HOME_BUTTON);
+        handleVignette(); // Dismiss vignette nếu xuất hiện khi về home page
         return new HomePage(driver);
     }
 }

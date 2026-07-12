@@ -48,7 +48,7 @@ public class ProductsTest extends BaseTest {
     )
     public void navigateToTestCasesPageSuccessfully() {
         // Step 3: Verify home page
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible at start of test");
         log.info("TC-AE-007 START");
@@ -60,9 +60,9 @@ public class ProductsTest extends BaseTest {
         boolean onTestCasesPage = waitForUrlContains(RouteConstants.TEST_CASES);
         Assert.assertTrue(onTestCasesPage,
                 "FAIL: URL should contain '/test_cases' after clicking Test Cases link. " +
-                "Actual URL: " + driver.getCurrentUrl());
+                "Actual URL: " + driver().getCurrentUrl());
 
-        log.info("TC-AE-007 PASS | Navigated to Test Cases page: {}", driver.getCurrentUrl());
+        log.info("TC-AE-007 PASS | Navigated to Test Cases page: {}", driver().getCurrentUrl());
     }
 
     // =====================================================================
@@ -84,7 +84,7 @@ public class ProductsTest extends BaseTest {
         log.info("TC-AE-008 START");
 
         // Step 3: Verify home page
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
@@ -139,7 +139,7 @@ public class ProductsTest extends BaseTest {
 
     private boolean waitForUrlContains(String fragment) {
         try {
-            new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(10))
+            new org.openqa.selenium.support.ui.WebDriverWait(driver(), java.time.Duration.ofSeconds(10))
                 .until(org.openqa.selenium.support.ui.ExpectedConditions.urlContains(fragment));
             return true;
         } catch (org.openqa.selenium.TimeoutException e) {

@@ -68,7 +68,7 @@ public class ContactUsTest extends BaseTest {
 
         // ── ACT ──────────────────────────────────────────────────────────
         // Step 3: Verify home page
-        HomePage homePage = new HomePage(driver);
+        HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
