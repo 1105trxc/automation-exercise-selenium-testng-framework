@@ -4,7 +4,7 @@
 <!--
   Smoke Suite – Critical path tests only.
   Run before every deployment to catch show-stopper bugs fast.
-  Target: < 5 minutes total.
+  Target: < 10 minutes total.
 -->
 <suite name="Smoke Test Suite" verbose="1" thread-count="1">
 
@@ -14,7 +14,7 @@
 
     <parameter name="browser" value="chrome"/>
 
-    <test name="Authentication Smoke">
+    <test name="Smoke Tests">
         <groups>
             <run>
                 <include name="smoke"/>
@@ -25,6 +25,9 @@
             <class name="com.automationexercise.tests.registration.RegistrationTest"/>
             <class name="com.automationexercise.tests.contact.ContactUsTest"/>
             <class name="com.automationexercise.tests.products.ProductsTest"/>
+            <class name="com.automationexercise.tests.products.ProductSearchTest"/>
+            <class name="com.automationexercise.tests.cart.CartTest"/>
+            <class name="com.automationexercise.tests.checkout.CheckoutTest"/>
         </classes>
     </test>
 

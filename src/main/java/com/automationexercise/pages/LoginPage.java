@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  *
  * This is why LoginPage has methods for BOTH login AND starting signup.
  */
-public class LoginPage extends BasePage {
+public class LoginPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(LoginPage.class);
 
@@ -118,7 +118,7 @@ public class LoginPage extends BasePage {
      */
     public HomePage clickLoginButton() {
         log.info("Clicking Login button");
-        click(LOGIN_BUTTON);
+        jsClick(LOGIN_BUTTON);
         return new HomePage(driver);
     }
 
@@ -154,7 +154,7 @@ public class LoginPage extends BasePage {
      */
     public SignupPage clickSignupButton() {
         log.info("Clicking Signup button → navigating to account details form");
-        click(SIGNUP_BUTTON);
+        jsClick(SIGNUP_BUTTON);
         return new SignupPage(driver);
     }
 

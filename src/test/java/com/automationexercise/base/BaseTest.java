@@ -85,7 +85,8 @@ public abstract class BaseTest {
         driver().get(baseUrl);
         log.info("Navigated to: {}", baseUrl);
 
-        // Dismiss vignette ad nếu xuất hiện ngay khi mở trang chủ
+        // Dismiss URL-based vignette ad (#google_vignette) nếu xuất hiện khi load trang
+        // Full-viewport iframe ads được xử lý tự động trong AEBasePage.click()
         AdHandler.dismissIfPresent(driver());
     }
 

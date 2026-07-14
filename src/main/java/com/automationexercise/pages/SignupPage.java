@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  *
  * NOTE: Phase 2 adds fillRegistrationForm(UserData) overload for data-driven tests.
  */
-public class SignupPage extends BasePage {
+public class SignupPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(SignupPage.class);
 
@@ -235,7 +235,7 @@ public class SignupPage extends BasePage {
     /** Clicks "Create Account" button. Stays on SignupPage until confirmation. */
     public SignupPage clickCreateAccount() {
         log.info("Clicking Create Account button");
-        click(CREATE_ACCOUNT_BUTTON);
+        jsClick(CREATE_ACCOUNT_BUTTON);
         return this;
     }
 
@@ -248,8 +248,8 @@ public class SignupPage extends BasePage {
      */
     public HomePage clickContinue() {
         log.info("Clicking Continue after account creation");
-        click(CONTINUE_BUTTON);
-        handleVignette(); // Dismiss vignette nếu xuất hiện khi về home page
+        jsClick(CONTINUE_BUTTON);
+        handleVignette();
         return new HomePage(driver);
     }
 }

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * Đặc biệt: Submit form sẽ trigger một JavaScript ALERT (dialog xác nhận).
  * BasePage.acceptAlert() sẽ xử lý việc này.
  */
-public class ContactUsPage extends BasePage {
+public class ContactUsPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(ContactUsPage.class);
 
@@ -130,7 +130,7 @@ public class ContactUsPage extends BasePage {
      */
     public HomePage clickHome() {
         log.info("Clicking Home button after contact form submission");
-        click(HOME_BUTTON);
+        jsClick(HOME_BUTTON);
         handleVignette(); // Dismiss vignette nếu xuất hiện khi về home page
         return new HomePage(driver);
     }
