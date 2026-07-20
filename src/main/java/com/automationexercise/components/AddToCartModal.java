@@ -25,7 +25,6 @@ public class AddToCartModal extends AEBasePage {
     // Locators
     // -----------------------------------------------------------------
     private static final By MODAL           = By.cssSelector("div.modal-content");
-    private static final By SUCCESS_MESSAGE = By.xpath("//h4[text()='Added!']");
     private static final By CONTINUE_BTN    = By.cssSelector("button.close-modal");
     private static final By VIEW_CART_LINK  = By.cssSelector(".modal-body a[href='/view_cart']");
 
@@ -73,11 +72,4 @@ public class AddToCartModal extends AEBasePage {
         return new CartPage(driver);
     }
 
-    /**
-     * Checks if "Added!" success message is displayed.
-     * Useful for optional assertions about a specific product being added.
-     */
-    public boolean isAddedSuccessMessageVisible() {
-        return isDisplayed(SUCCESS_MESSAGE, 5);
-    }
 }

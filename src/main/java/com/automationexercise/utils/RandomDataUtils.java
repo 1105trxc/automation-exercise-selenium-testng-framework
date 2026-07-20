@@ -57,13 +57,4 @@ public final class RandomDataUtils {
         return "TestUser" + timeSuffix + uuid;
     }
 
-    /**
-     * Returns the current timestamp string.
-     * Useful for screenshot file naming.
-     *
-     * @return Timestamp in yyyyMMddHHmmss format
-     */
-    public static String generateTimestamp() {
-        return LocalDateTime.now().format(TIMESTAMP_FORMAT);
-    }
 }

@@ -32,9 +32,7 @@ public class RegistrationTest extends BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(RegistrationTest.class);
 
-    // =====================================================================
     // TC-AE-001: Register User (Happy Path)
-    // =====================================================================
 
     @Test(
         description = "TC-AE-001 - Register User",
@@ -91,9 +89,7 @@ public class RegistrationTest extends BaseTest {
         log.info("TC-AE-001 PASS | Account deleted and confirmed");
     }
 
-    // =====================================================================
     // TC-AE-005: Register User with existing email
-    // =====================================================================
 
     @Test(
         description = "TC-AE-005 - Register User with existing email",

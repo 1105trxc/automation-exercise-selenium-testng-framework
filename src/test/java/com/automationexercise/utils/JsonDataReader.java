@@ -118,9 +118,7 @@ public final class JsonDataReader {
         }
     }
 
-    // -----------------------------------------------------------------------
     // Private helpers
-    // -----------------------------------------------------------------------
 
     private static InputStream openStream(String jsonFileName) {
         String fullPath = TEST_DATA_PATH + jsonFileName;

@@ -57,7 +57,7 @@ public class ContactUsTest extends BaseTest {
         "and verifies the success message."
     )
     public void submitContactUsFormSuccessfully() {
-        // ── ARRANGE ──────────────────────────────────────────────────────
+        // Arrange
         // Load form data from JSON
         ContactFormData formData = JsonDataReader.readFirst(
                 "contact_form.json", "contactFormData", ContactFormData.class);
@@ -67,7 +67,7 @@ public class ContactUsTest extends BaseTest {
         String uploadFilePath = getUploadFilePath("testfiles/test_upload.txt");
         log.info("TC-AE-006 | Upload file path: {}", uploadFilePath);
 
-        // ── ACT ──────────────────────────────────────────────────────────
+        // Act
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
@@ -87,7 +87,7 @@ public class ContactUsTest extends BaseTest {
                 .uploadFile(uploadFilePath)
                 .clickSubmit();
 
-        // ── ASSERT ───────────────────────────────────────────────────────
+        // Assert
         Assert.assertTrue(contactUsPage.isSuccessMessageVisible(),
                 "FAIL: Success message should be visible after form submission");
 
@@ -103,9 +103,7 @@ public class ContactUsTest extends BaseTest {
         log.info("TC-AE-006 PASS | Contact Us form submitted and verified successfully");
     }
 
-    // -----------------------------------------------------------------------
     // Helper
-    // -----------------------------------------------------------------------
 
     /**
      * Gets the absolute file path of a resource file on the test classpath.

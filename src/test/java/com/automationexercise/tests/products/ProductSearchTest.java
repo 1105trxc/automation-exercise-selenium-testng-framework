@@ -39,9 +39,7 @@ public class ProductSearchTest extends BaseTest {
 
     private static final String SEARCH_KEYWORD = "Blue Top";
 
-    // =====================================================================
     // TC-AE-009: Search Product
-    // =====================================================================
 
     @Test(
         description = "TC-AE-009 - Search Product",
@@ -80,9 +78,7 @@ public class ProductSearchTest extends BaseTest {
         log.info("TC-AE-009 PASS | Found {} result(s)", productsPage.getSearchedProductCount());
     }
 
-    // =====================================================================
     // TC-AE-020: Search Products and Verify Cart After Login
-    // =====================================================================
 
     @Test(
         description = "TC-AE-020 - Search Products and Verify Cart After Login",

@@ -27,15 +27,12 @@ import java.util.Objects;
  *    Lý do: Tự động fallback che giấu lỗi thật (locator sai, element disabled, v.v.)
 
  *
- * 2. clickWithJsFallback() chỉ dùng khi đã biết thực sự cần
- *    Lý do: JS click bypass validation của browser, dễ bỏ qua lỗi UI thật.
- *
- * 3. isDisplayedNow() vs isDisplayed()
+ * 2. isDisplayedNow() vs isDisplayed()
  *    - isDisplayedNow(): kiểm tra tức thì, không wait. Dùng cho negative assertion.
  *    - isDisplayed(locator): wait với default timeout. Dùng cho positive assertion.
  *    - isDisplayed(locator, seconds): explicit timeout. Dùng khi biết cần bao lâu.
  *
- * 4. type() không log nội dung nhập
+ * 3. type() không log nội dung nhập
  *    Lý do: Tránh lộ password và dữ liệu nhạy cảm trong log file.
  */
 public abstract class BasePage {

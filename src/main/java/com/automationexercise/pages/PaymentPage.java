@@ -56,11 +56,6 @@ public class PaymentPage extends AEBasePage {
     // State Verification
     // -----------------------------------------------------------------
 
-    /** Xác nhận Payment form đã load */
-    public boolean isPaymentFormVisible() {
-        return isDisplayed(NAME_ON_CARD, 10);
-    }
-
     // -----------------------------------------------------------------
     // Form Actions – Fluent API
     // -----------------------------------------------------------------

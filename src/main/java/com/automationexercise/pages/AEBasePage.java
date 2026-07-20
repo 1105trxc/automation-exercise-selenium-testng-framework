@@ -65,9 +65,6 @@ public abstract class AEBasePage extends BasePage {
      *      click exactly once more.
      *   3. Any other ElementClickInterceptedException (first-party modal, dialog, overlay)
      *      is re-thrown immediately — the test must fail so we can diagnose the real issue.
-     *
-     * The vignette URL check and blind post-click re-click that previously existed here
-     * were removed because they could cause duplicate side-effecting actions.
      */
     @Override
     protected void click(By locator) {

@@ -8,10 +8,7 @@ import org.slf4j.LoggerFactory;
 /**
  * AccountCreatedPage – Page Object for the "ACCOUNT CREATED!" confirmation state.
  *
- * This page appears after SignupPage.clickCreateAccount() succeeds.
- * It was previously represented by SignupPage, which was incorrect semantically.
- *
- * URL pattern: /account_created
+ * This page appears after SignupPage.clickCreateAccount() succeeds at /account_created.
  */
 public class AccountCreatedPage extends AEBasePage {
 

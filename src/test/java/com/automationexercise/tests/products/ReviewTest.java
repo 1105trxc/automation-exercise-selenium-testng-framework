@@ -42,22 +42,17 @@ public class ReviewTest extends BaseTest {
     public void addReviewOnProduct() {
         log.info("TC-AE-021 START");
 
-        // Step 3: Click on 'Products' button
         HomePage homePage = new HomePage(driver());
         ProductsPage productsPage = homePage.getHeader().clickProducts();
 
-        // Step 4: Verify ALL PRODUCTS page
         Assert.assertTrue(productsPage.isAllProductsVisible(),
                 "FAIL: All Products page should be visible");
 
-        // Step 5: Click on 'View Product' button
         ProductDetailPage detailPage = productsPage.clickFirstProductViewProduct();
 
-        // Step 6: Verify 'Write Your Review' is visible
         Assert.assertTrue(detailPage.isWriteReviewVisible(),
                 "FAIL: 'Write Your Review' section should be visible on product detail page");
 
-        // Step 7: Enter name, email and review
         String reviewerName  = "Automation Tester";
         String reviewerEmail = RandomDataUtils.generateUniqueEmail();
         String reviewText    = "This is an automated test review. Product quality is excellent.";
@@ -67,10 +62,8 @@ public class ReviewTest extends BaseTest {
                 .enterReviewEmail(reviewerEmail)
                 .enterReviewText(reviewText);
 
-        // Step 8: Click 'Submit' button
         detailPage.clickSubmitReview();
 
-        // Step 9: Verify success message 'Thank you for your review.'
         Assert.assertTrue(detailPage.isReviewSuccessVisible(),
                 "FAIL: Success message 'Thank you for your review.' should be visible after submission");
 

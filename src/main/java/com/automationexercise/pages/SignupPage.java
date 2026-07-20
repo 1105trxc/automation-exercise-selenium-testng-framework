@@ -39,8 +39,6 @@ public class SignupPage extends AEBasePage {
     private static final By DOB_YEAR             = By.id("years");
     private static final By NEWSLETTER           = By.id("newsletter");
     private static final By NEWSLETTER_LABEL     = By.cssSelector("label[for='newsletter']");
-    private static final By SPECIAL_OFFERS       = By.id("optin");
-
     // -----------------------------------------------------------------
     // Section 2: Address Information Locators
     // -----------------------------------------------------------------

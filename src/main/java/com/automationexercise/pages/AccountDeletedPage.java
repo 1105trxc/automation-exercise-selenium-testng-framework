@@ -8,10 +8,7 @@ import org.slf4j.LoggerFactory;
 /**
  * AccountDeletedPage – Page Object for the "ACCOUNT DELETED!" confirmation state.
  *
- * This page appears after HeaderComponent.clickDeleteAccount() succeeds.
- * It was previously misrepresented as HomePage.
- *
- * URL pattern: /delete_account
+ * This page appears after HeaderComponent.clickDeleteAccount() succeeds at /delete_account.
  */
 public class AccountDeletedPage extends AEBasePage {
 

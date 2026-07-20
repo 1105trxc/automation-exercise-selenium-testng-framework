@@ -125,12 +125,6 @@ public class ProductsPage extends AEBasePage {
     /** Brands section label */
     private static final By BRANDS_SECTION = By.cssSelector(".brands_products h2");
 
-    /** Tất cả brand links trong sidebar */
-    private static final By BRAND_LINKS = By.cssSelector(".brands-name ul li a");
-
-    /** Brand page heading sau khi click brand */
-    private static final By BRAND_PAGE_HEADING = By.cssSelector(".title.text-center");
-
     // -----------------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------------

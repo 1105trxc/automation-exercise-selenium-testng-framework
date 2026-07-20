@@ -38,9 +38,7 @@ public class ScrollTest extends BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(ScrollTest.class);
 
-    // =====================================================================
     // TC-AE-025: Verify Scroll Up using Arrow button
-    // =====================================================================
 
     @Test(
         description = "TC-AE-025 - Verify Scroll Up using 'Arrow' button",
@@ -57,7 +55,6 @@ public class ScrollTest extends BaseTest {
     public void scrollUpUsingArrowButton() {
         log.info("TC-AE-025 START");
 
-        // Step 3: Verify home page
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
@@ -65,7 +62,6 @@ public class ScrollTest extends BaseTest {
         homePage.goToBottom();
         log.info("TC-AE-025 | Scrolled to bottom");
 
-        // Step 5: Verify 'SUBSCRIPTION' is visible
         Assert.assertTrue(homePage.getFooterSubscription().isSubscriptionVisible(),
                 "FAIL: 'SUBSCRIPTION' text should be visible after scrolling to bottom");
 
@@ -82,9 +78,7 @@ public class ScrollTest extends BaseTest {
         log.info("TC-AE-025 PASS | Page scrolled up successfully via arrow button");
     }
 
-    // =====================================================================
     // TC-AE-026: Verify Scroll Up without Arrow button (PAGE_UP key)
-    // =====================================================================
 
     @Test(
         description = "TC-AE-026 - Verify Scroll Up without 'Arrow' button",
@@ -101,7 +95,6 @@ public class ScrollTest extends BaseTest {
     public void scrollUpWithoutArrowButton() {
         log.info("TC-AE-026 START");
 
-        // Step 3: Verify home page
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");

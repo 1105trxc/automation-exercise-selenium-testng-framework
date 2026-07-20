@@ -93,21 +93,4 @@ public class UserFlow {
         return new HomePage(driver);
     }
 
-    /**
-     * Submits login credentials and returns the LoginPage for error assertion.
-     * Use this for negative login test cases where you expect failure.
-     *
-     * @param email    the email to attempt
-     * @param password the password to attempt
-     * @return LoginPage – so the test can assert the error message
-     */
-    public LoginPage submitInvalidLogin(String email, String password) {
-        log.info("UserFlow: submitting invalid login for '{}'", email);
-
-        return new HeaderComponent(driver)
-                .clickLoginSignup()
-                .enterLoginEmail(email)
-                .enterLoginPassword(password)
-                .clickLoginButtonExpectingFailure();
-    }
 }
