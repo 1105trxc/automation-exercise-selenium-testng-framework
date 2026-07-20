@@ -2,6 +2,7 @@ package com.automationexercise.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,24 +75,6 @@ public class ProductsPage extends AEBasePage {
      */
     private static final By ADD_TO_CART_BUTTONS =
             By.cssSelector(".product-overlay a.add-to-cart");
-
-    /** Sản phẩm đầu tiên – wrapper div để hover */
-    private static final By FIRST_PRODUCT_WRAPPER =
-            By.xpath("(//div[@class='product-image-wrapper'])[1]");
-
-    /** Sản phẩm thứ hai – wrapper div để hover */
-    private static final By SECOND_PRODUCT_WRAPPER =
-            By.xpath("(//div[@class='product-image-wrapper'])[2]");
-
-    /** Add to cart button của sản phẩm đầu tiên */
-    private static final By FIRST_ADD_TO_CART =
-            By.xpath("(//div[contains(@class,'product-image-wrapper')])[1]"
-                    + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]");
-
-    /** Add to cart button của sản phẩm thứ hai */
-    private static final By SECOND_ADD_TO_CART =
-            By.xpath("(//div[contains(@class,'product-image-wrapper')])[2]"
-                    + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]");
 
     // -----------------------------------------------------------------
     // Locators – Category Sidebar (TC-018)
@@ -210,10 +193,7 @@ public class ProductsPage extends AEBasePage {
     /** Hover the first product and click its overlay "Add to cart" button. */
     public ProductsPage hoverAndAddFirstProductToCart() {
         log.info("Hovering first product and clicking Add to Cart");
-        scrollIntoView(FIRST_PRODUCT_WRAPPER);
-        hoverOver(FIRST_PRODUCT_WRAPPER);
-        click(FIRST_ADD_TO_CART);
-        return this;
+        return hoverAndAddProductToCart(1);
     }
 
     /**
@@ -221,14 +201,11 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage hoverAndAddSecondProductToCart() {
         log.info("Hovering second product and clicking Add to Cart");
-        scrollIntoView(SECOND_PRODUCT_WRAPPER);
-        hoverOver(SECOND_PRODUCT_WRAPPER);
-        click(SECOND_ADD_TO_CART);
-        return this;
+        return hoverAndAddProductToCart(2);
     }
 
     /**
-     * Returns the number of "Add to cart" buttons currently visible in the search results.
+     * Returns the number of product cards currently present in the search results.
      * Used by CartFlow to control the orchestration loop.
      */
     public int getSearchedProductCount() {
@@ -252,20 +229,42 @@ public class ProductsPage extends AEBasePage {
      * @return AddToCartModal ready to call .clickContinueShopping() or .clickViewCart()
      */
     public com.automationexercise.components.AddToCartModal addSearchedProductAt(int oneBasedIndex) {
-        By wrapper = By.xpath(
-            "(//div[contains(@class,'product-image-wrapper')])[" + oneBasedIndex + "]"
-        );
-        By overlayButton = By.xpath(
-            "(//div[contains(@class,'product-image-wrapper')])[" + oneBasedIndex + "]"
-                + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]"
-        );
-
         log.info("Adding searched product #{} to cart", oneBasedIndex);
-        scrollIntoView(wrapper);
-        hoverOver(wrapper);
-        click(overlayButton);
+        hoverAndAddProductToCart(oneBasedIndex);
 
         return new com.automationexercise.components.AddToCartModal(driver).waitForModal();
+    }
+
+    private ProductsPage hoverAndAddProductToCart(int oneBasedIndex) {
+        By wrapper = By.xpath(productWrapperXPath(oneBasedIndex));
+        By productInfo = productPartAt(oneBasedIndex, "productinfo");
+        By overlay = productPartAt(oneBasedIndex, "product-overlay");
+        By overlayButton = By.xpath(
+                productWrapperXPath(oneBasedIndex)
+                        + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]"
+        );
+
+        scrollIntoView(wrapper);
+        hoverOver(wrapper);
+        wait.until(ignored -> isOverlayFullyExpanded(productInfo, overlay));
+        click(overlayButton);
+        return this;
+    }
+
+    private boolean isOverlayFullyExpanded(By productInfo, By overlay) {
+        WebElement productInfoElement = driver.findElement(productInfo);
+        WebElement overlayElement = driver.findElement(overlay);
+        return overlayElement.isDisplayed()
+                && overlayElement.getRect().getHeight() >= productInfoElement.getRect().getHeight() - 1;
+    }
+
+    private By productPartAt(int oneBasedIndex, String className) {
+        return By.xpath(productWrapperXPath(oneBasedIndex)
+                + "//div[contains(concat(' ', normalize-space(@class), ' '), ' " + className + " ')]");
+    }
+
+    private String productWrapperXPath(int oneBasedIndex) {
+        return "(//div[contains(@class,'product-image-wrapper')])[" + oneBasedIndex + "]";
     }
 
     // -----------------------------------------------------------------
