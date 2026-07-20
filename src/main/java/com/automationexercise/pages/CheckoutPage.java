@@ -85,13 +85,6 @@ public class CheckoutPage extends AEBasePage {
         return isDisplayed(DELIVERY_ADDRESS_BLOCK, 10);
     }
 
-    /**
-     * Xác nhận billing address section visible.
-     */
-    public boolean isBillingAddressVisible() {
-        return isDisplayed(BILLING_ADDRESS_BLOCK, 5);
-    }
-
     // -----------------------------------------------------------------
     // Address Getters (for TC-023 address verification)
     // -----------------------------------------------------------------

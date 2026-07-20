@@ -1,9 +1,15 @@
 package com.automationexercise.components;
 
+import com.automationexercise.config.ConfigManager;
 import org.openqa.selenium.By;
+import org.openqa.selenium.ElementNotInteractableException;
 import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.JavascriptException;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -48,27 +54,13 @@ public final class AdHandler {
     private static final Duration CLOSE_BUTTON_TIMEOUT = Duration.ofSeconds(3);
     private static final Duration OVERLAY_GONE_TIMEOUT = Duration.ofSeconds(3);
 
-    // -----------------------------------------------------------------
-    // Vignette close button locators (Type 1)
-    // -----------------------------------------------------------------
+    private static final By KNOWN_AD_ELEMENTS = By.cssSelector(
+            "iframe[id^='aswift_'], iframe[id^='google_ads_'], ins.adsbygoogle");
 
-    private static final By[] VIGNETTE_CLOSE_LOCATORS = {
-        By.xpath("//button[contains(@aria-label,'Close') or contains(@aria-label,'close')]"),
-        By.xpath("//div[contains(@id,'dismiss')]//button"),
-        By.xpath("//*[text()='Close'][@role='button' or self::button]"),
+    private static final By[] KNOWN_AD_CLOSE_LOCATORS = {
         By.id("dismiss-button"),
-        By.cssSelector("span#dismiss-button"),
-    };
-
-    // -----------------------------------------------------------------
-    // Known third-party ad close button locators (Type 2)
-    // -----------------------------------------------------------------
-
-    private static final By[] THIRD_PARTY_AD_CLOSE_LOCATORS = {
-        By.xpath("//div[contains(text(),'Close') and not(ancestor::iframe)]"),
-        By.xpath("//p[contains(text(),'Close') and not(ancestor::iframe)]"),
-        By.xpath("//*[normalize-space(text())='Close'][not(ancestor::iframe)]"),
-        By.xpath("//a[normalize-space(text())='Close']"),
+        By.cssSelector("button[aria-label='Close ad']"),
+        By.cssSelector("[aria-label='Close advertisement']")
     };
 
     /**
@@ -79,7 +71,7 @@ public final class AdHandler {
      *   application-owned elements such as modals, loading overlays, or dialogs.
      *   We must target only the proven third-party ad containers.
      */
-    private static final String HIDE_KNOWN_AD_FRAMES_JS =
+    private static final String HIDE_KNOWN_AD_ELEMENTS_JS =
         "var adFrames = document.querySelectorAll(" +
         "  'iframe[id^=\"aswift_\"], iframe[id^=\"google_ads_\"], ins.adsbygoogle'" +
         ");" +
@@ -92,6 +84,10 @@ public final class AdHandler {
 
     private AdHandler() {
         throw new UnsupportedOperationException("AdHandler is a utility class.");
+    }
+
+    public static boolean isWorkaroundEnabled() {
+        return ConfigManager.getBoolean("thirdPartyAdWorkaround", true);
     }
 
     // =========================================================================
@@ -108,31 +104,31 @@ public final class AdHandler {
      * @param driver the current WebDriver instance
      */
     public static void dismissIfPresent(WebDriver driver) {
+        if (!isWorkaroundEnabled()) {
+            log.debug("Third-party ad workaround is disabled by configuration.");
+            return;
+        }
+
         if (!isVignettePresent(driver)) {
             return;
         }
 
         log.warn("Google Vignette detected (URL: {}). Dismissing...", driver.getCurrentUrl());
 
-        // Strategy 1: Escape key
-        if (tryEscapeKey(driver)) {
-            waitForVignetteGone(driver);
+        if (tryEscapeKey(driver) && waitForVignetteGone(driver)) {
             cleanUrlFragment(driver);
             log.info("Vignette dismissed via Escape key.");
             return;
         }
 
-        // Strategy 2: Click a known close button
-        if (tryClickCloseButton(driver, VIGNETTE_CLOSE_LOCATORS)) {
-            waitForVignetteGone(driver);
+        if (tryClickCloseButton(driver) && waitForVignetteGone(driver)) {
             cleanUrlFragment(driver);
             log.info("Vignette dismissed via Close button.");
             return;
         }
 
-        // Strategy 3: JS hide of known ad frames only (not the whole DOM)
-        log.warn("Could not dismiss Vignette via UI. Hiding known ad frames via JS.");
-        hideKnownAdFrames(driver);
+        log.warn("Could not dismiss Vignette via UI. Hiding exact known ad elements via JS.");
+        hideKnownAdElements(driver);
         cleanUrlFragment(driver);
     }
 
@@ -169,16 +165,19 @@ public final class AdHandler {
      * @param driver the current WebDriver instance
      */
     public static void dismissBlockingThirdPartyAd(WebDriver driver) {
+        if (!isWorkaroundEnabled()) {
+            throw new IllegalStateException("Third-party ad workaround is disabled by configuration.");
+        }
+
         log.warn("Attempting to dismiss blocking third-party ad...");
 
-        if (tryClickCloseButton(driver, THIRD_PARTY_AD_CLOSE_LOCATORS)) {
+        if (tryClickCloseButton(driver) && waitForKnownAdElementsGone(driver)) {
             log.info("Third-party ad dismissed via native Close button.");
             return;
         }
 
-        // Fallback: hide only the known Google ad frame elements
         log.info("No Close button found. Hiding known Google ad frames via targeted JS.");
-        hideKnownAdFrames(driver);
+        hideKnownAdElements(driver);
     }
 
     // =========================================================================
@@ -186,22 +185,18 @@ public final class AdHandler {
     // =========================================================================
 
     private static boolean isVignettePresent(WebDriver driver) {
-        try {
-            return driver.getCurrentUrl().contains("google_vignette");
-        } catch (org.openqa.selenium.WebDriverException e) {
-            return false;
-        }
+        return driver.getCurrentUrl().contains("google_vignette");
     }
 
-    private static boolean tryClickCloseButton(WebDriver driver, By[] locators) {
-        for (By locator : locators) {
+    private static boolean tryClickCloseButton(WebDriver driver) {
+        for (By locator : KNOWN_AD_CLOSE_LOCATORS) {
             try {
                 WebElement btn = new WebDriverWait(driver, CLOSE_BUTTON_TIMEOUT)
                     .until(ExpectedConditions.elementToBeClickable(locator));
                 btn.click();
                 log.debug("Clicked Close button: {}", locator);
                 return true;
-            } catch (org.openqa.selenium.WebDriverException e) {
+            } catch (TimeoutException | StaleElementReferenceException e) {
                 log.debug("Close button locator not usable: {}", locator, e);
             }
         }
@@ -211,10 +206,8 @@ public final class AdHandler {
     private static boolean tryEscapeKey(WebDriver driver) {
         try {
             driver.findElement(By.tagName("body")).sendKeys(Keys.ESCAPE);
-            new WebDriverWait(driver, CLOSE_BUTTON_TIMEOUT)
-                .until(d -> !d.getCurrentUrl().contains("google_vignette"));
             return true;
-        } catch (org.openqa.selenium.WebDriverException e) {
+        } catch (NoSuchElementException | ElementNotInteractableException e) {
             log.debug("Escape did not dismiss vignette ad.", e);
             return false;
         }
@@ -230,17 +223,31 @@ public final class AdHandler {
                 "history.replaceState(null, '', window.location.pathname + window.location.search);"
             );
             log.debug("URL fragment cleaned via history.replaceState.");
-        } catch (org.openqa.selenium.WebDriverException e) {
+        } catch (JavascriptException e) {
             log.debug("Could not clean URL fragment: {}", e.getMessage());
         }
     }
 
-    private static void waitForVignetteGone(WebDriver driver) {
+    private static boolean waitForVignetteGone(WebDriver driver) {
         try {
             new WebDriverWait(driver, OVERLAY_GONE_TIMEOUT)
                 .until(d -> !d.getCurrentUrl().contains("google_vignette"));
-        } catch (org.openqa.selenium.TimeoutException e) {
+            return true;
+        } catch (TimeoutException e) {
             log.debug("Vignette URL fragment still present after wait.", e);
+            return false;
+        }
+    }
+
+    private static boolean waitForKnownAdElementsGone(WebDriver driver) {
+        try {
+            new WebDriverWait(driver, OVERLAY_GONE_TIMEOUT)
+                    .until(d -> d.findElements(KNOWN_AD_ELEMENTS).stream()
+                            .noneMatch(AdHandler::isDisplayed));
+            return true;
+        } catch (TimeoutException e) {
+            log.debug("Known ad elements are still visible after close attempt.", e);
+            return false;
         }
     }
 
@@ -248,12 +255,24 @@ public final class AdHandler {
      * Hides ONLY the known Google ad frame elements via targeted CSS.
      * Does NOT touch arbitrary divs, application modals, or layout styles.
      */
-    private static void hideKnownAdFrames(WebDriver driver) {
+    private static void hideKnownAdElements(WebDriver driver) {
+        if (driver.findElements(KNOWN_AD_ELEMENTS).isEmpty()) {
+            throw new IllegalStateException(
+                    "No known Google ad element was found; refusing to modify unrelated DOM.");
+        }
+
+        ((JavascriptExecutor) driver).executeScript(HIDE_KNOWN_AD_ELEMENTS_JS);
+        if (!waitForKnownAdElementsGone(driver)) {
+            throw new IllegalStateException("Known Google ad elements remained visible after workaround.");
+        }
+        log.info("Known Google ad frames hidden via targeted JS.");
+    }
+
+    private static boolean isDisplayed(WebElement element) {
         try {
-            ((JavascriptExecutor) driver).executeScript(HIDE_KNOWN_AD_FRAMES_JS);
-            log.info("Known Google ad frames hidden via targeted JS.");
-        } catch (org.openqa.selenium.WebDriverException e) {
-            log.warn("Could not hide known ad frames: {}", e.getMessage());
+            return element.isDisplayed();
+        } catch (StaleElementReferenceException e) {
+            return false;
         }
     }
 }

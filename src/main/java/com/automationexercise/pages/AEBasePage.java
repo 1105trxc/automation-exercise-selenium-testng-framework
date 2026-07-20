@@ -74,7 +74,8 @@ public abstract class AEBasePage extends BasePage {
         try {
             super.click(locator);
         } catch (ElementClickInterceptedException exception) {
-            if (!AdHandler.isBlockedByKnownThirdPartyAd(exception)) {
+            if (!AdHandler.isBlockedByKnownThirdPartyAd(exception)
+                    || !AdHandler.isWorkaroundEnabled()) {
                 // First-party element is blocking. Re-throw so the test fails honestly.
                 throw exception;
             }

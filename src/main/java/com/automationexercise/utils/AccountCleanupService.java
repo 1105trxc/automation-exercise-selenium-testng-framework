@@ -97,6 +97,7 @@ public final class AccountCleanupService {
         Map<String, String> accounts = new LinkedHashMap<>(ACCOUNTS.get());
 
         if (accounts.isEmpty()) {
+            ACCOUNTS.remove();
             return new CleanupResult(0, List.of());
         }
 
@@ -144,11 +145,11 @@ public final class AccountCleanupService {
             return isSuccessfulDeletion(response);
 
         } catch (IOException e) {
-            log.warn("Cleanup API IOException for {}: {}", email, e.getMessage());
+            log.warn("Cleanup API I/O failure for {}.", email, e);
             return false;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); // Restore interrupt status
-            log.warn("Cleanup API interrupted for {}: {}", email, e.getMessage());
+            log.warn("Cleanup API interrupted for {}.", email, e);
             return false;
         }
     }
@@ -178,7 +179,7 @@ public final class AccountCleanupService {
             return success;
 
         } catch (IOException e) {
-            log.warn("Failed to parse cleanup API response JSON: {}", e.getMessage());
+            log.warn("Failed to parse cleanup API response JSON.", e);
             return false;
         }
     }

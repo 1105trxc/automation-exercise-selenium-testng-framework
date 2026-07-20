@@ -1,8 +1,6 @@
 package com.automationexercise.pages;
 
-import com.automationexercise.components.AdHandler;
 import com.automationexercise.config.ConfigManager;
-import com.automationexercise.constants.FrameworkConstants;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -89,13 +87,6 @@ public abstract class BasePage {
         return waitUntilVisible(locator).getText().trim();
     }
 
-    /**
-     * Returns the value of an element's attribute.
-     */
-    protected String getAttribute(By locator, String attribute) {
-        return waitUntilVisible(locator).getAttribute(attribute);
-    }
-
     // =========================================================================
     // ELEMENT VISIBILITY CHECKS
     // =========================================================================
@@ -165,26 +156,6 @@ public abstract class BasePage {
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
 
-    /** Waits until element is no longer visible (e.g., loading spinner disappears). */
-    protected void waitUntilInvisible(By locator) {
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(locator));
-    }
-
-    /** Waits until the URL contains a specific substring. */
-    protected void waitForUrlContains(String urlFragment) {
-        wait.until(ExpectedConditions.urlContains(urlFragment));
-    }
-
-    /** Waits until the URL exactly matches the given value. */
-    protected void waitForUrlToBe(String expectedUrl) {
-        wait.until(ExpectedConditions.urlToBe(expectedUrl));
-    }
-
-    /** Waits until specific text appears in an element. */
-    protected void waitForTextInElement(By locator, String expectedText) {
-        wait.until(ExpectedConditions.textToBePresentInElementLocated(locator, expectedText));
-    }
-
     // =========================================================================
     // SCROLL ACTIONS
     // =========================================================================
@@ -234,20 +205,6 @@ public abstract class BasePage {
     /** Selects a dropdown option by its value attribute. */
     protected void selectByValue(By locator, String value) {
         new Select(waitUntilVisible(locator)).selectByValue(value);
-    }
-
-    // =========================================================================
-    // NAVIGATION HELPERS
-    // =========================================================================
-
-    /** Returns the current browser URL. */
-    protected String getCurrentUrl() {
-        return driver.getCurrentUrl();
-    }
-
-    /** Returns the browser tab title. */
-    protected String getPageTitle() {
-        return driver.getTitle();
     }
 
     /**

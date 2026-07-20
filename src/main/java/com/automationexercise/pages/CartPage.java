@@ -153,18 +153,6 @@ public class CartPage extends AEBasePage {
      */
     public record CartItemSnapshot(String name, String unitPrice, String quantity, String total) {}
 
-    /**
-     * Kiểm tra một sản phẩm có trong cart dựa trên tên.
-     * @param productName Tên sản phẩm cần tìm (partial match)
-     */
-    public boolean isProductInCart(String productName) {
-        return driver.findElements(CART_ROWS).stream()
-                .anyMatch(row -> {
-                    List<WebElement> names = row.findElements(ROW_PRODUCT_NAME);
-                    return !names.isEmpty() && names.get(0).getText().contains(productName);
-                });
-    }
-
     // -----------------------------------------------------------------
     // Row-based Getters (1-indexed, e.g. getProductNameAtRow(1))
     // -----------------------------------------------------------------

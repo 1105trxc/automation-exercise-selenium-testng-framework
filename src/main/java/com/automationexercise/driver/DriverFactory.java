@@ -108,7 +108,7 @@ public final class DriverFactory {
             driver.quit();
             log.info("Driver closed successfully.");
         } catch (org.openqa.selenium.WebDriverException e) {
-            log.warn("Exception while quitting driver (will still remove from ThreadLocal): {}", e.getMessage());
+            log.warn("Exception while quitting driver; ThreadLocal will still be cleared.", e);
         } finally {
             driverThreadLocal.remove();
             log.debug("Driver removed from ThreadLocal.");

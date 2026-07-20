@@ -42,17 +42,9 @@ public class HeaderComponent extends AEBasePage {
         return isDisplayed(LOGOUT_LINK, 5);
     }
 
-    /**
-     * Returns the logged-in username from the "Logged in as <b>name</b>" text.
-     * Returns empty string if user is not logged in.
-     */
+    /** Returns the logged-in username from the "Logged in as <b>name</b>" text. */
     public String getLoggedInUsername() {
-        try {
-            return driver.findElement(LOGGED_IN_USERNAME_B).getText().trim();
-        } catch (org.openqa.selenium.WebDriverException e) {
-            log.debug("Could not find logged-in username element.");
-            return "";
-        }
+        return getText(LOGGED_IN_USERNAME_B);
     }
 
     /**
