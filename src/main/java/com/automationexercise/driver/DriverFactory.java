@@ -1,6 +1,7 @@
 package com.automationexercise.driver;
 
 import com.automationexercise.config.ConfigManager;
+import com.automationexercise.utils.DownloadManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -135,20 +136,7 @@ public final class DriverFactory {
         // These are NATIVE Chrome UI elements, not web elements.
         // They cannot be dismissed by Selenium alone without these settings.
         // ----------------------------------------------------------------
-        HashMap<String, Object> prefs = new HashMap<>();
-        prefs.put("autofill.profile_enabled", false);       // Disable address autofill
-        prefs.put("autofill.credit_card_enabled", false);   // Disable card autofill
-        prefs.put("credentials_enable_service", false);     // Disable password manager
-        prefs.put("profile.password_manager_enabled", false); // Disable save password
-
-        // Setup download directory for TC-AE-024
-        String downloadDir = System.getProperty("user.dir") + java.io.File.separator + "target" + java.io.File.separator + "downloads";
-        prefs.put("download.default_directory", downloadDir);
-        prefs.put("download.prompt_for_download", false);
-        prefs.put("download.directory_upgrade", true);
-        prefs.put("safebrowsing.enabled", true);
-
-        options.setExperimentalOption("prefs", prefs);
+        options.setExperimentalOption("prefs", chromiumPreferences());
 
         options.addArguments("--disable-popup-blocking");   // Don't block popups from page
         options.addArguments("--disable-notifications");    // Block browser notifications
@@ -163,6 +151,14 @@ public final class DriverFactory {
         if (headless) {
             options.addArguments("--headless");
         }
+        String downloadDirectory = DownloadManager.getDownloadDirectory().toString();
+        options.addPreference("browser.download.folderList", 2);
+        options.addPreference("browser.download.dir", downloadDirectory);
+        options.addPreference("browser.download.useDownloadDir", true);
+        options.addPreference("browser.download.alwaysOpenPanel", false);
+        options.addPreference(
+                "browser.helperApps.neverAsk.saveToDisk",
+                "text/plain,application/octet-stream");
         return new FirefoxDriver(options);
     }
 
@@ -171,6 +167,20 @@ public final class DriverFactory {
         if (headless) {
             options.addArguments("--headless=new");
         }
+        options.setExperimentalOption("prefs", chromiumPreferences());
         return new EdgeDriver(options);
+    }
+
+    private static HashMap<String, Object> chromiumPreferences() {
+        HashMap<String, Object> preferences = new HashMap<>();
+        preferences.put("autofill.profile_enabled", false);
+        preferences.put("autofill.credit_card_enabled", false);
+        preferences.put("credentials_enable_service", false);
+        preferences.put("profile.password_manager_enabled", false);
+        preferences.put("download.default_directory", DownloadManager.getDownloadDirectory().toString());
+        preferences.put("download.prompt_for_download", false);
+        preferences.put("download.directory_upgrade", true);
+        preferences.put("safebrowsing.enabled", true);
+        return preferences;
     }
 }

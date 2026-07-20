@@ -24,10 +24,7 @@ import java.util.stream.Stream;
  *   - File deletion failures throw an exception rather than being silently ignored.
  *   - File content is read with explicit UTF-8 encoding.
  *
- * BROWSER SUPPORT NOTE:
- *   Download directory preference is currently configured for Chrome only.
- *   TC-AE-024 (Download Invoice) is therefore Chrome-specific.
- *   Running this test on Firefox or Edge will require additional browser configuration.
+ * DriverFactory applies this directory to Chrome, Edge and Firefox download preferences.
  */
 public final class DownloadManager {
 
