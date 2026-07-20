@@ -1,31 +1,36 @@
 package com.automationexercise.pages;
 
 import com.automationexercise.components.AdHandler;
+import com.automationexercise.components.AddToCartModal;
+import com.automationexercise.components.FooterSubscriptionComponent;
+import com.automationexercise.components.HeaderComponent;
 import org.openqa.selenium.By;
+import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AEBasePage – Site-specific base page cho automationexercise.com.
+ * AEBasePage – Site-specific base page for automationexercise.com.
  *
- * TẠI SAO TẠO CLASS NÀY:
- * BasePage là generic infrastructure, không biết gì về ads của một website cụ thể.
- * AEBasePage là lớp trung gian chứa logic đặc thù của automationexercise.com.
+ * WHY THIS CLASS EXISTS:
+ *   BasePage is generic infrastructure reusable across projects.
+ *   AEBasePage adds site-specific behavior: handling third-party Google ads
+ *   that appear as full-viewport iframes on automationexercise.com.
  *
- * VẤN ĐỀ NÓ GIẢI QUYẾT:
- * automationexercise.com hiển thị full-viewport iframe ads (aswift_N) che toàn
- * màn hình SAU KHI trang load, không có #google_vignette trong URL.
- * Những ads này gây ElementClickInterceptedException trên bất kỳ click nào.
+ * CLICK CONTRACT:
+ *   One retry is permitted ONLY when Selenium throws ElementClickInterceptedException
+ *   AND the intercepting element is a proven known third-party ad.
  *
- * THIẾT KẾ:
- * Override click() để dismiss full-screen ad TRƯỚC mỗi lần click.
- * Tất cả Page Objects của project này extend AEBasePage thay vì BasePage trực tiếp.
- * → Không page nào phải tự lo về ads. DRY được bảo đảm.
+ *   What is NOT done here:
+ *   - No post-click URL inspection to decide whether to click again.
+ *   - No automatic re-click after a successful click (risk of double-submit).
+ *   - No hiding of first-party overlays (app modals, dialogs, error popups).
  *
- * TẠI SAO KHÔNG ĐẶT TRONG BasePage:
- * BasePage phải reusable cho nhiều project khác nhau.
- * Đặt site-specific logic vào BasePage là vi phạm Single Responsibility.
+ * WHY NOT RE-CLICK AFTER A SUCCESSFUL CLICK:
+ *   A generic click override cannot know if the locator represents a navigation link,
+ *   a form submit, "Place Order", "Pay", or "Delete Account".
+ *   Re-clicking blindly after the click already landed can cause duplicate submissions.
  */
 public abstract class AEBasePage extends BasePage {
 
@@ -35,22 +40,49 @@ public abstract class AEBasePage extends BasePage {
         super(driver);
     }
 
+    /** Returns the FooterSubscriptionComponent present on all pages. */
+    public FooterSubscriptionComponent getFooterSubscription() {
+        return new FooterSubscriptionComponent(driver);
+    }
+
+    /** Returns the AddToCartModal (appears after adding a product). */
+    public AddToCartModal getAddToCartModal() {
+        return new AddToCartModal(driver);
+    }
+
+    /** Returns the HeaderComponent (navigation bar on all pages). */
+    public HeaderComponent getHeader() {
+        return new HeaderComponent(driver);
+    }
+
     /**
-     * Override click() để tự động dismiss full-viewport ads trước khi click.
+     * Overrides click() to handle third-party ad interceptions specific to automationexercise.com.
      *
-     * LÝ DO:
-     * - Full-viewport iframe (100vw/100vh) có thể xuất hiện bất cứ lúc nào
-     *   trên automationexercise.com, đặc biệt trước khi click elements.
-     * - Dismiss xảy ra nhanh (2-3s) nếu ad đang hiện, là no-op nếu không có.
-     * - Thay thế pattern copy-paste AdHandler calls ở mỗi method.
+     * POLICY:
+     *   1. Attempt native click.
+     *   2. If ElementClickInterceptedException is thrown AND it is proven to be caused by
+     *      a known third-party ad element (identified by AdHandler), dismiss the ad and
+     *      click exactly once more.
+     *   3. Any other ElementClickInterceptedException (first-party modal, dialog, overlay)
+     *      is re-thrown immediately — the test must fail so we can diagnose the real issue.
      *
-     * CHÚ Ý:
-     * Không gọi dismissIfPresent() ở đây vì nó dùng URL check (#google_vignette)
-     * và chỉ nên được gọi lúc navigate (đã có trong BaseTest.setUp()).
+     * The vignette URL check and blind post-click re-click that previously existed here
+     * were removed because they could cause duplicate side-effecting actions.
      */
     @Override
     protected void click(By locator) {
-        AdHandler.dismissFullScreenAd(driver);
-        super.click(locator);
+        try {
+            super.click(locator);
+        } catch (ElementClickInterceptedException exception) {
+            if (!AdHandler.isBlockedByKnownThirdPartyAd(exception)) {
+                // First-party element is blocking. Re-throw so the test fails honestly.
+                throw exception;
+            }
+
+            log.warn("Click intercepted by known third-party ad. Dismissing ad, then retrying once.");
+            AdHandler.dismissBlockingThirdPartyAd(driver);
+            // One controlled retry after a confirmed ad interception
+            super.click(locator);
+        }
     }
 }

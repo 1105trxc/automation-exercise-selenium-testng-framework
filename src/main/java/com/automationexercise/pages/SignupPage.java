@@ -40,6 +40,7 @@ public class SignupPage extends AEBasePage {
     private static final By DOB_MONTH            = By.id("months");
     private static final By DOB_YEAR             = By.id("years");
     private static final By NEWSLETTER           = By.id("newsletter");
+    private static final By NEWSLETTER_LABEL     = By.cssSelector("label[for='newsletter']");
     private static final By SPECIAL_OFFERS       = By.id("optin");
 
     // -----------------------------------------------------------------
@@ -123,7 +124,18 @@ public class SignupPage extends AEBasePage {
 
     public SignupPage checkNewsletter() {
         if (!driver.findElement(NEWSLETTER).isSelected()) {
-            click(NEWSLETTER);
+            scrollIntoView(NEWSLETTER);
+            try {
+                click(NEWSLETTER);
+            } catch (org.openqa.selenium.ElementClickInterceptedException e) {
+                if (e.getMessage() != null && e.getMessage().contains("click-protector")) {
+                    log.info("Checkbox blocked by click-protector, clicking associated label");
+                    click(NEWSLETTER_LABEL);
+                } else {
+                    throw e;
+                }
+            }
+            wait.until(d -> driver.findElement(NEWSLETTER).isSelected());
         }
         return this;
     }
@@ -173,35 +185,6 @@ public class SignupPage extends AEBasePage {
     // -----------------------------------------------------------------
 
     /**
-     * Fills all required registration fields in one call.
-     * Uses primitive String parameters – kept for backward compatibility with LoginTest.
-     *
-     * DESIGN DECISION: This method only fills required fields.
-     * Optional fields (Address2, Company) are skipped to keep tests lean.
-     */
-    public SignupPage fillRegistrationForm(String password,
-                                           String firstName, String lastName,
-                                           String address,
-                                           String country, String state,
-                                           String city, String zipcode,
-                                           String mobile) {
-        log.info("Filling registration form for: {} {}", firstName, lastName);
-        selectTitleMr();
-        enterPassword(password);
-        selectDateOfBirth("10", "3", "1995");
-        checkNewsletter();
-        enterFirstName(firstName);
-        enterLastName(lastName);
-        enterAddress(address);
-        selectCountry(country);
-        enterState(state);
-        enterCity(city);
-        enterZipcode(zipcode);
-        enterMobileNumber(mobile);
-        return this;
-    }
-
-    /**
      * Fills all registration fields using a UserData model object.
      * PHASE 2: Preferred method for data-driven tests (reads data from JSON).
      *
@@ -232,24 +215,15 @@ public class SignupPage extends AEBasePage {
     // Submit and Navigate
     // -----------------------------------------------------------------
 
-    /** Clicks "Create Account" button. Stays on SignupPage until confirmation. */
-    public SignupPage clickCreateAccount() {
-        log.info("Clicking Create Account button");
-        jsClick(CREATE_ACCOUNT_BUTTON);
-        return this;
-    }
-
     /**
-     * Clicks "Continue" after account creation confirmation.
-     * Navigates to HomePage.
+     * Clicks "Create Account" button.
+     * Navigates to AccountCreatedPage on success.
      *
-     * NOTE: Gọi handleVignette() vì sau khi navigate về trang chủ,
-     * Google Vignette ad có thể xuất hiện và block mọi tương tác tiếp theo.
+     * @return AccountCreatedPage – the truthful page state after account creation
      */
-    public HomePage clickContinue() {
-        log.info("Clicking Continue after account creation");
-        jsClick(CONTINUE_BUTTON);
-        handleVignette();
-        return new HomePage(driver);
+    public AccountCreatedPage clickCreateAccount() {
+        log.info("Clicking Create Account button");
+        click(CREATE_ACCOUNT_BUTTON);
+        return new AccountCreatedPage(driver);
     }
 }

@@ -1,6 +1,7 @@
 package com.automationexercise.components;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -11,57 +12,44 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.List;
 
 /**
- * AdHandler – Xử lý quảng cáo riêng của automationexercise.com.
+ * AdHandler – Handles third-party Google ad overlays on automationexercise.com.
  *
- * LÝ DO TÁCH KHỎI BasePage:
- * BasePage là generic infrastructure dùng lại ở mọi dự án.
- * Logic quảng cáo này chỉ phù hợp với automationexercise.com (demo site).
+ * SCOPE:
+ *   This class ONLY handles proven third-party ad elements from Google:
+ *     - iframe[id^='aswift_']
+ *     - iframe[id^='google_ads_']
+ *     - ins.adsbygoogle
  *
- * ═══════════════════════════════════════════════════════════════════
- * PHÂN TÍCH VẤN ĐỀ (dựa trên log lỗi và screenshots thực tế):
- * ═══════════════════════════════════════════════════════════════════
+ *   It does NOT hide:
+ *     - Application modals
+ *     - Confirmation dialogs
+ *     - Loading blockers
+ *     - Cookie consent banners
+ *     - First-party overlays or error popups
  *
- * Website automationexercise.com có 2 LOẠI quảng cáo khác nhau:
+ * AD TYPES ON THIS SITE:
+ *   Type 1 – Google Vignette (URL fragment #google_vignette):
+ *     Appears before or during page load. Dismissed via Escape key.
+ *     Only called from BaseTest.setUp() after initial navigation.
  *
- * LOẠI 1 – Google Vignette (URL-based):
- *   URL chứa "#google_vignette" → overlay hiện TRƯỚC trang load.
- *   → Xử lý bằng cách click Close → Escape → navigate clean URL.
+ *   Type 2 – Full-viewport iframe (aswift_N):
+ *     Appears after page load. No URL fragment.
+ *     Caught as ElementClickInterceptedException in AEBasePage.click().
  *
- * LOẠI 2 – Full-viewport iframe (KHÔNG có URL fragment):
- *   iframe aswift_N với style="width:100vw; height:100vh; position:absolute"
- *   che toàn bộ màn hình SAU KHI trang đã load.
- *   URL BÌNH THƯỜNG (không có #google_vignette).
- *   → Xử lý bằng cách:
- *     a. Click "Close" text/button ở gần iframe
- *     b. Ẩn iframe bằng JS (display:none) nếu không tìm được Close
- *
- * ERROR MESSAGE ĐIỂN HÌNH CỦA LOẠI 2:
- * "element click intercepted: Element <a class='add-to-cart'>
- *  is not clickable at point (790, 920).
- *  Other element would receive the click: <iframe id='aswift_2'
- *  style='width: 100vw !important; height: 100vh !important'>"
- *
- * CHIẾN LƯỢC XỬ LÝ (theo thứ tự ưu tiên):
- * 1. Detect Vignette (URL-based) → click Close → Escape → clean URL
- * 2. Detect Full-viewport iframe (CSS-based) → click Close text → JS hide
- *
- * TẠI SAO history.replaceState() KHÔNG ĐỦ MỘT MÌNH:
- * replaceState() chỉ xóa URL fragment. Nó KHÔNG xóa iframe trong DOM.
- * Phải đóng overlay thật trước, SAU ĐÓ mới clean URL.
+ * The demo site injects third-party vignette ads outside the application UI.
+ * The workaround is deliberately scoped to known Google ad frames only.
  */
 public final class AdHandler {
 
     private static final Logger log = LoggerFactory.getLogger(AdHandler.class);
 
-    private static final Duration CLOSE_BUTTON_TIMEOUT  = Duration.ofSeconds(3);
-    private static final Duration OVERLAY_GONE_TIMEOUT  = Duration.ofSeconds(3);
-    private static final Duration IFRAME_DETECT_TIMEOUT = Duration.ofSeconds(2);
+    private static final Duration CLOSE_BUTTON_TIMEOUT = Duration.ofSeconds(3);
+    private static final Duration OVERLAY_GONE_TIMEOUT = Duration.ofSeconds(3);
 
     // -----------------------------------------------------------------
-    // Locators – Nút Close của Vignette (thử theo thứ tự)
+    // Vignette close button locators (Type 1)
     // -----------------------------------------------------------------
 
     private static final By[] VIGNETTE_CLOSE_LOCATORS = {
@@ -73,29 +61,10 @@ public final class AdHandler {
     };
 
     // -----------------------------------------------------------------
-    // Locators – Full-viewport iframe ad (Loại 2)
+    // Known third-party ad close button locators (Type 2)
     // -----------------------------------------------------------------
 
-    /**
-     * Iframe check: aswift_N có position absolute/fixed + width/height 100vw/100vh.
-     * Dùng JS để kiểm tra vì CSS inline style không query được bằng CSS selector đơn giản.
-     */
-    private static final String FULLSCREEN_IFRAME_JS =
-        "var ads = document.querySelectorAll('[id^=\"aswift\"], [id^=\"google_ads\"], ins.adsbygoogle');" +
-        "for (var i = 0; i < ads.length; i++) {" +
-        "  var s = ads[i].style;" +
-        "  if (s.width && s.width.includes('100vw') && s.height && s.height.includes('100vh')) {" +
-        "    return true;" +
-        "  }" +
-        "}" +
-        "return false;";
-
-    /**
-     * "Close" text xuất hiện phía trên iframe full-viewport.
-     * Trên screenshots thấy rõ chữ "Close" ở top-right của vùng mờ.
-     * Locator: element chứa text "Close" KHÔNG nằm trong iframe.
-     */
-    private static final By[] FULLSCREEN_AD_CLOSE_LOCATORS = {
+    private static final By[] THIRD_PARTY_AD_CLOSE_LOCATORS = {
         By.xpath("//div[contains(text(),'Close') and not(ancestor::iframe)]"),
         By.xpath("//p[contains(text(),'Close') and not(ancestor::iframe)]"),
         By.xpath("//*[normalize-space(text())='Close'][not(ancestor::iframe)]"),
@@ -103,19 +72,23 @@ public final class AdHandler {
     };
 
     /**
-     * Script ẩn tất cả iframe ads full-viewport bằng display:none.
-     * Dùng làm fallback khi không click được Close.
-     * display:none để không phá DOM structure, an toàn hơn removeChild.
+     * JavaScript that hides only the known Google ad iframe elements.
+     *
+     * WHY ONLY THESE SELECTORS:
+     *   Broader selectors that target arbitrary divs or iframes risk hiding
+     *   application-owned elements such as modals, loading overlays, or dialogs.
+     *   We must target only the proven third-party ad containers.
      */
-    private static final String HIDE_FULLSCREEN_IFRAME_JS =
-        "document.querySelectorAll('[id^=\"aswift\"], [id^=\"google_ads\"], ins.adsbygoogle').forEach(function(el) {" +
-        "  if (el.style.width && el.style.width.includes('100vw')) {" +
-        "    el.style.setProperty('display', 'none', 'important');" +
-        "    el.style.setProperty('visibility', 'hidden', 'important');" +
-        "    el.style.setProperty('pointer-events', 'none', 'important');" +
-        "    el.style.setProperty('z-index', '-1', 'important');" +
-        "  }" +
-        "});";
+    private static final String HIDE_KNOWN_AD_FRAMES_JS =
+        "var adFrames = document.querySelectorAll(" +
+        "  'iframe[id^=\"aswift_\"], iframe[id^=\"google_ads_\"], ins.adsbygoogle'" +
+        ");" +
+        "for (var i = 0; i < adFrames.length; i++) {" +
+        "  adFrames[i].style.setProperty('display', 'none', 'important');" +
+        "  adFrames[i].style.setProperty('visibility', 'hidden', 'important');" +
+        "  adFrames[i].style.setProperty('pointer-events', 'none', 'important');" +
+        "  adFrames[i].style.setProperty('z-index', '-1', 'important');" +
+        "}";
 
     private AdHandler() {
         throw new UnsupportedOperationException("AdHandler is a utility class.");
@@ -126,121 +99,100 @@ public final class AdHandler {
     // =========================================================================
 
     /**
-     * Kiểm tra và dismiss Google Vignette ad nếu đang hiện (URL-based detection).
+     * Detects and dismisses a Google Vignette ad if the URL contains #google_vignette.
      *
-     * Gọi ở những nơi mà vignette có khả năng xuất hiện:
-     * - BaseTest.setUp() sau khi navigate đến baseUrl
-     * - Page method nào navigate về trang chủ (ví dụ SignupPage.clickContinue)
+     * WHEN TO CALL:
+     *   Only at safe navigation boundaries, e.g., after initial page load in BaseTest.setUp().
+     *   Not as a generic self-healing mechanism after every business action.
      *
-     * @param driver WebDriver hiện tại
+     * @param driver the current WebDriver instance
      */
     public static void dismissIfPresent(WebDriver driver) {
         if (!isVignettePresent(driver)) {
             return;
         }
 
-        log.warn("🔔 Google Vignette detected (URL: {}). Dismissing...", driver.getCurrentUrl());
+        log.warn("Google Vignette detected (URL: {}). Dismissing...", driver.getCurrentUrl());
 
-        // Strategy 1: Click nút Close → chờ overlay mất → clean URL fragment
-        if (tryClickCloseButton(driver, VIGNETTE_CLOSE_LOCATORS)) {
-            waitForOverlayGone(driver);
-            cleanUrlFragment(driver);
-            log.info("✅ Vignette dismissed via Close button.");
-            return;
-        }
-
-        // Strategy 2: Escape key → chờ overlay mất → clean URL fragment
+        // Strategy 1: Escape key
         if (tryEscapeKey(driver)) {
-            waitForOverlayGone(driver);
+            waitForVignetteGone(driver);
             cleanUrlFragment(driver);
-            log.info("✅ Vignette dismissed via Escape key.");
+            log.info("Vignette dismissed via Escape key.");
             return;
         }
 
-        // Strategy 3 (last resort): Navigate đến clean URL, reload trang
-        navigateToCleanUrl(driver);
+        // Strategy 2: Click a known close button
+        if (tryClickCloseButton(driver, VIGNETTE_CLOSE_LOCATORS)) {
+            waitForVignetteGone(driver);
+            cleanUrlFragment(driver);
+            log.info("Vignette dismissed via Close button.");
+            return;
+        }
+
+        // Strategy 3: JS hide of known ad frames only (not the whole DOM)
+        log.warn("Could not dismiss Vignette via UI. Hiding known ad frames via JS.");
+        hideKnownAdFrames(driver);
+        cleanUrlFragment(driver);
     }
 
     /**
-     * Xử lý full-viewport iframe ads (Loại 2 – KHÔNG có URL fragment).
+     * Returns true if the ElementClickInterceptedException was caused by a known
+     * third-party Google ad element (identified by its id prefix or class).
      *
-     * Đây là loại quảng cáo gây lỗi "element click intercepted" vì:
-     * - iframe có style="width:100vw; height:100vh; position:absolute"
-     * - Che toàn bộ màn hình
-     * - URL KHÔNG chứa #google_vignette nên dismissIfPresent() bỏ qua
+     * DETECTION POLICY:
+     *   Only elements whose ids start with 'aswift_' or 'google_ads_', or
+     *   elements with class 'adsbygoogle', qualify as known third-party ads.
+     *   Any other intercepting element is a first-party blocker.
      *
-     * GỌI METHOD NÀY TRƯỚC KHI CLICK bất kỳ element nào trên ProductsPage,
-     * CategoryPage, BrandPage (những trang có inline ads mạnh).
-     *
-     * @param driver WebDriver hiện tại
+     * @param exception the intercepted click exception
+     * @return true if caused by a known Google ad frame
      */
-    public static void dismissFullScreenAd(WebDriver driver) {
-        if (!isFullScreenAdPresent(driver)) {
-            return;
+    public static boolean isBlockedByKnownThirdPartyAd(ElementClickInterceptedException exception) {
+        String message = exception.getMessage();
+        if (message == null) {
+            return false;
         }
-
-        log.warn("🔔 Full-viewport iframe ad detected. Dismissing...");
-
-        // Strategy 1: Click "Close" text near the iframe
-        if (tryClickCloseButton(driver, FULLSCREEN_AD_CLOSE_LOCATORS)) {
-            waitForFullScreenAdGone(driver);
-            log.info("✅ Full-viewport ad dismissed via Close text click.");
-            return;
-        }
-
-        // Strategy 2: JS hide – ẩn iframe khỏi màn hình
-        hideFullScreenIframe(driver);
-        log.info("✅ Full-viewport ad hidden via JavaScript.");
+        return message.contains("aswift_")
+                || message.contains("google_ads_")
+                || message.contains("adsbygoogle");
     }
 
     /**
-     * Ẩn ALL inline banner ads trong DOM.
+     * Attempts to dismiss the third-party ad that blocked a click.
      *
-     * Dùng khi test navigate đến ProductsPage và cần click các elements.
-     * An toàn hơn dismissFullScreenAd vì không chờ animation.
+     * RESOLUTION ORDER:
+     *   1. Try clicking the native Close button of the ad.
+     *   2. If no close button found, hide only the known ad frames via targeted JS.
+     *   3. Never hides arbitrary DOM elements.
      *
-     * @param driver WebDriver hiện tại
+     * @param driver the current WebDriver instance
      */
-    public static void hideInlineAds(WebDriver driver) {
-        try {
-            String script =
-                "document.querySelectorAll(" +
-                "  'iframe[id*=\"aswift\"], iframe[id*=\"google_ads\"], .adsbygoogle'" +
-                ").forEach(function(el) { " +
-                "  el.style.display = 'none';" +
-                "  el.style.pointerEvents = 'none';" +
-                "});";
-            ((JavascriptExecutor) driver).executeScript(script);
-            log.debug("Inline ads hidden via JavaScript.");
-        } catch (Exception e) {
-            log.debug("Could not hide inline ads: {}", e.getMessage());
+    public static void dismissBlockingThirdPartyAd(WebDriver driver) {
+        log.warn("Attempting to dismiss blocking third-party ad...");
+
+        if (tryClickCloseButton(driver, THIRD_PARTY_AD_CLOSE_LOCATORS)) {
+            log.info("Third-party ad dismissed via native Close button.");
+            return;
         }
+
+        // Fallback: hide only the known Google ad frame elements
+        log.info("No Close button found. Hiding known Google ad frames via targeted JS.");
+        hideKnownAdFrames(driver);
     }
 
     // =========================================================================
     // PRIVATE HELPERS
     // =========================================================================
 
-    /** Detect Vignette bằng URL fragment */
     private static boolean isVignettePresent(WebDriver driver) {
-        return driver.getCurrentUrl().contains("google_vignette");
-    }
-
-    /**
-     * Detect full-viewport iframe bằng JavaScript.
-     * Check iframe aswift_N có width:100vw + height:100vh.
-     */
-    private static boolean isFullScreenAdPresent(WebDriver driver) {
         try {
-            Object result = ((JavascriptExecutor) driver).executeScript(FULLSCREEN_IFRAME_JS);
-            return Boolean.TRUE.equals(result);
-        } catch (Exception e) {
-            log.debug("Could not check for fullscreen ad: {}", e.getMessage());
+            return driver.getCurrentUrl().contains("google_vignette");
+        } catch (org.openqa.selenium.WebDriverException e) {
             return false;
         }
     }
 
-    /** Thử click Close button theo danh sách locators */
     private static boolean tryClickCloseButton(WebDriver driver, By[] locators) {
         for (By locator : locators) {
             try {
@@ -249,8 +201,8 @@ public final class AdHandler {
                 btn.click();
                 log.debug("Clicked Close button: {}", locator);
                 return true;
-            } catch (Exception ignored) {
-                // Try next locator
+            } catch (org.openqa.selenium.WebDriverException e) {
+                log.debug("Close button locator not usable: {}", locator, e);
             }
         }
         return false;
@@ -262,15 +214,15 @@ public final class AdHandler {
             new WebDriverWait(driver, CLOSE_BUTTON_TIMEOUT)
                 .until(d -> !d.getCurrentUrl().contains("google_vignette"));
             return true;
-        } catch (Exception ignored) {
+        } catch (org.openqa.selenium.WebDriverException e) {
+            log.debug("Escape did not dismiss vignette ad.", e);
             return false;
         }
     }
 
     /**
-     * Dùng history.replaceState() để xóa #google_vignette fragment khỏi URL.
-     * Chỉ làm sạch URL bar, KHÔNG tự đóng overlay.
-     * Phải gọi SAU KHI overlay đã được đóng thật.
+     * Cleans the #google_vignette fragment from the URL bar using history.replaceState().
+     * This only updates the URL — it does not affect the DOM or overlay.
      */
     private static void cleanUrlFragment(WebDriver driver) {
         try {
@@ -278,52 +230,30 @@ public final class AdHandler {
                 "history.replaceState(null, '', window.location.pathname + window.location.search);"
             );
             log.debug("URL fragment cleaned via history.replaceState.");
-        } catch (Exception e) {
+        } catch (org.openqa.selenium.WebDriverException e) {
             log.debug("Could not clean URL fragment: {}", e.getMessage());
         }
     }
 
-    private static void waitForOverlayGone(WebDriver driver) {
+    private static void waitForVignetteGone(WebDriver driver) {
         try {
             new WebDriverWait(driver, OVERLAY_GONE_TIMEOUT)
                 .until(d -> !d.getCurrentUrl().contains("google_vignette"));
-        } catch (Exception ignored) {
-            // Continue even if wait times out
+        } catch (org.openqa.selenium.TimeoutException e) {
+            log.debug("Vignette URL fragment still present after wait.", e);
         }
     }
 
-    /** Chờ full-screen iframe biến mất khỏi DOM */
-    private static void waitForFullScreenAdGone(WebDriver driver) {
+    /**
+     * Hides ONLY the known Google ad frame elements via targeted CSS.
+     * Does NOT touch arbitrary divs, application modals, or layout styles.
+     */
+    private static void hideKnownAdFrames(WebDriver driver) {
         try {
-            new WebDriverWait(driver, OVERLAY_GONE_TIMEOUT)
-                .until(d -> !isFullScreenAdPresent(d));
-        } catch (Exception ignored) {
-            // Continue even if wait times out
-        }
-    }
-
-    /** Ẩn full-viewport iframe bằng JS (fallback) */
-    private static void hideFullScreenIframe(WebDriver driver) {
-        try {
-            ((JavascriptExecutor) driver).executeScript(HIDE_FULLSCREEN_IFRAME_JS);
-        } catch (Exception e) {
-            log.warn("Could not hide fullscreen iframe: {}", e.getMessage());
-        }
-    }
-
-    private static void navigateToCleanUrl(WebDriver driver) {
-        String currentUrl = driver.getCurrentUrl();
-        String cleanUrl = currentUrl.contains("#")
-            ? currentUrl.substring(0, currentUrl.indexOf("#"))
-            : currentUrl;
-        log.warn("⚠️ Last resort: navigating to clean URL: {}", cleanUrl);
-        try {
-            driver.navigate().to(cleanUrl);
-            new WebDriverWait(driver, Duration.ofSeconds(10))
-                .until(ExpectedConditions.not(ExpectedConditions.urlContains("google_vignette")));
-            log.info("✅ Vignette bypassed via clean URL navigation.");
-        } catch (Exception e) {
-            log.error("❌ Could not dismiss vignette. Test may be unstable: {}", e.getMessage());
+            ((JavascriptExecutor) driver).executeScript(HIDE_KNOWN_AD_FRAMES_JS);
+            log.info("Known Google ad frames hidden via targeted JS.");
+        } catch (org.openqa.selenium.WebDriverException e) {
+            log.warn("Could not hide known ad frames: {}", e.getMessage());
         }
     }
 }

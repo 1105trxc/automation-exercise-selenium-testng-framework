@@ -1,6 +1,7 @@
 package com.automationexercise.pages;
 
 import com.automationexercise.components.AdHandler;
+import com.automationexercise.config.ConfigManager;
 import com.automationexercise.constants.FrameworkConstants;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
@@ -26,7 +27,7 @@ import java.util.Objects;
  *
  * 1. click() KHÔNG tự động xử lý quảng cáo
  *    Lý do: Tự động fallback che giấu lỗi thật (locator sai, element disabled, v.v.)
- *    Page class gọi handleVignette() hoặc AdHandler trước khi click nếu cần.
+
  *
  * 2. clickWithJsFallback() chỉ dùng khi đã biết thực sự cần
  *    Lý do: JS click bypass validation của browser, dễ bỏ qua lỗi UI thật.
@@ -48,7 +49,7 @@ public abstract class BasePage {
     protected BasePage(WebDriver driver) {
         this.driver = Objects.requireNonNull(driver, "WebDriver must not be null.");
         this.wait = new WebDriverWait(driver,
-                Duration.ofSeconds(FrameworkConstants.EXPLICIT_WAIT_SECONDS));
+                Duration.ofSeconds(ConfigManager.getInt("explicitWait", 15)));
     }
 
     // =========================================================================
@@ -58,30 +59,14 @@ public abstract class BasePage {
     /**
      * Waits for element to be clickable, then clicks it.
      *
-     * KHÔNG tự động xử lý quảng cáo hay fallback JS.
-     * Nếu click bị intercept bởi quảng cáo, gọi handleVignette() trước,
-     * hoặc dùng clickWithJsFallback() ở nơi đã biết thực sự cần JS fallback.
+     * Nếu click bị intercept bởi quảng cáo, lỗi sẽ được đẩy ra ngoài
+     * để AEBasePage xử lý tập trung (RF-P0-03).
      */
     protected void click(By locator) {
         waitUntilClickable(locator).click();
         log.debug("Clicked: {}", locator);
     }
 
-    /**
-     * Giống click() nhưng có fallback sang JavaScript nếu bị ElementClickInterceptedException.
-     *
-     * CHỈ dùng khi đã xác định click bị intercept bởi overlay không thể tránh khác.
-     * Ghi lại lý do trong comment tại nơi gọi.
-     */
-    protected void clickWithJsFallback(By locator) {
-        try {
-            waitUntilClickable(locator).click();
-            log.debug("Clicked: {}", locator);
-        } catch (ElementClickInterceptedException e) {
-            log.warn("⚠️ Click intercepted for {}. Using JS fallback (verify this is expected).", locator);
-            jsClick(locator);
-        }
-    }
 
     /**
      * Waits for element to be visible, clears it, then types the text.
@@ -144,7 +129,7 @@ public abstract class BasePage {
      *   Assert.assertTrue(homePage.isUserLoggedIn(), "Should be logged in");
      */
     protected boolean isDisplayed(By locator) {
-        return isDisplayed(locator, FrameworkConstants.EXPLICIT_WAIT_SECONDS);
+        return isDisplayed(locator, ConfigManager.getInt("explicitWait", 15));
     }
 
     /**
@@ -164,21 +149,6 @@ public abstract class BasePage {
         } catch (TimeoutException e) {
             return false;
         }
-    }
-
-    // =========================================================================
-    // AD HANDLING – proxy đến AdHandler (logic nằm ở AdHandler)
-    // =========================================================================
-
-    /**
-     * Gọi AdHandler để dismiss Google Vignette ad nếu đang hiện.
-     *
-     * Page class gọi method này ở những nơi mà vignette có thể xuất hiện,
-     * ví dụ: sau khi navigate về trang chủ.
-     * BasePage không tự động gọi trong mọi click() hay isDisplayed().
-     */
-    protected void handleVignette() {
-        AdHandler.dismissIfPresent(driver);
     }
 
     // =========================================================================
@@ -264,25 +234,6 @@ public abstract class BasePage {
     /** Selects a dropdown option by its value attribute. */
     protected void selectByValue(By locator, String value) {
         new Select(waitUntilVisible(locator)).selectByValue(value);
-    }
-
-    // =========================================================================
-    // JAVASCRIPT ACTIONS
-    // =========================================================================
-
-    /**
-     * Clicks an element using JavaScript.
-     *
-     * CHỈ dùng khi:
-     * - Element bị che bởi overlay không thể dismiss
-     * - Normal click() đã thất bại và đã có lý do rõ ràng
-     *
-     * Dùng waitUntilClickable() để đảm bảo element đã sẵn sàng trước khi JS click.
-     */
-    protected void jsClick(By locator) {
-        WebElement element = waitUntilClickable(locator);
-        js().executeScript("arguments[0].click();", element);
-        log.debug("JS clicked: {}", locator);
     }
 
     // =========================================================================
