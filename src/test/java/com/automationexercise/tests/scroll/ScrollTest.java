@@ -62,22 +62,19 @@ public class ScrollTest extends BaseTest {
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
-        // Step 4: Scroll down page to bottom
         homePage.goToBottom();
         log.info("TC-AE-025 | Scrolled to bottom");
 
         // Step 5: Verify 'SUBSCRIPTION' is visible
-        Assert.assertTrue(homePage.isSubscriptionVisible(),
+        Assert.assertTrue(homePage.getFooterSubscription().isSubscriptionVisible(),
                 "FAIL: 'SUBSCRIPTION' text should be visible after scrolling to bottom");
 
-        // Step 6: Click on arrow at bottom right side to move upward
         homePage.clickScrollUpButton();
         log.info("TC-AE-025 | Scroll up arrow clicked");
 
         // Wait for scroll animation to complete
-        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+        homePage.waitForScrollToTop();
 
-        // Step 7: Verify page is scrolled up and hero text visible
         Assert.assertTrue(homePage.isHeroTextVisible(),
                 "FAIL: Hero text 'Full-Fledged practice website...' should be visible " +
                 "after clicking scroll-up button");
@@ -109,22 +106,18 @@ public class ScrollTest extends BaseTest {
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
-        // Step 4: Scroll down page to bottom
         homePage.goToBottom();
         log.info("TC-AE-026 | Scrolled to bottom");
 
-        // Step 5: Verify 'SUBSCRIPTION' is visible
-        Assert.assertTrue(homePage.isSubscriptionVisible(),
+        Assert.assertTrue(homePage.getFooterSubscription().isSubscriptionVisible(),
                 "FAIL: 'SUBSCRIPTION' text should be visible after scrolling to bottom");
 
-        // Step 6: Scroll up page to top using PAGE_UP key
         homePage.scrollUpWithPageUpKey();
-        log.info("TC-AE-026 | PAGE_UP key pressed");
+        log.info("TC-AE-026 | Scrolled up using PAGE_UP key");
 
         // Wait for scroll to complete
-        try { Thread.sleep(1500); } catch (InterruptedException ignored) {}
+        homePage.waitForScrollToTop();
 
-        // Step 7: Verify page is scrolled up and hero text visible
         Assert.assertTrue(homePage.isHeroTextVisible(),
                 "FAIL: Hero text 'Full-Fledged practice website...' should be visible " +
                 "after pressing PAGE_UP key");

@@ -60,7 +60,7 @@ public class CategoryBrandTest extends BaseTest {
                 "FAIL: Home page should be visible");
 
         // Navigate to products page where category sidebar is clearly visible
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
 
         Assert.assertTrue(productsPage.isCategoryVisible(),
                 "FAIL: Category sidebar should be visible");
@@ -72,24 +72,19 @@ public class CategoryBrandTest extends BaseTest {
         // Step 6: Verify category page is displayed with heading
         String womenCategoryHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-018 | Women subcategory heading: '{}'", womenCategoryHeading);
-        Assert.assertFalse(womenCategoryHeading.isEmpty(),
-                "FAIL: Women category page heading should not be empty");
-        Assert.assertTrue(womenCategoryHeading.toUpperCase().contains("WOMEN"),
-                "FAIL: Women category heading should contain 'WOMEN' but was: " + womenCategoryHeading);
+        Assert.assertEquals(womenCategoryHeading.toUpperCase().replaceAll("\\s+", " "), "WOMEN - DRESS PRODUCTS",
+                "FAIL: Heading should be exactly 'WOMEN - DRESS PRODUCTS' but was: " + womenCategoryHeading);
 
-        // Step 7-8: Click Men category → click subcategory → verify heading
+        // Step 7: On left side bar, click on any sub-category link of 'Men' category
         productsPage.clickMenCategory();
         productsPage.clickFirstMenSubcategory();
-
+        // Step 8: Verify that user is navigated to that category page
         String menCategoryHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-018 | Men subcategory heading: '{}'", menCategoryHeading);
-        Assert.assertFalse(menCategoryHeading.isEmpty(),
-                "FAIL: Men category page heading should not be empty");
-        Assert.assertTrue(menCategoryHeading.toUpperCase().contains("MEN"),
-                "FAIL: Men category heading should contain 'MEN' but was: " + menCategoryHeading);
+        Assert.assertEquals(menCategoryHeading.toUpperCase().replaceAll("\\s+", " "), "MEN - TSHIRTS PRODUCTS",
+                "FAIL: Heading should be exactly 'MEN - TSHIRTS PRODUCTS' but was: " + menCategoryHeading);
 
-        log.info("TC-AE-018 PASS | Women heading: '{}' | Men heading: '{}'",
-                womenCategoryHeading, menCategoryHeading);
+        log.info("TC-AE-018 PASS | Successfully navigated through Categories");
     }
 
     // =====================================================================
@@ -112,7 +107,7 @@ public class CategoryBrandTest extends BaseTest {
 
         // Step 3: Click on 'Products' button
         HomePage homePage = new HomePage(driver());
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
 
         // Step 4: Verify Brands are visible on left side bar
         Assert.assertTrue(productsPage.isBrandSectionVisible(),
@@ -121,18 +116,16 @@ public class CategoryBrandTest extends BaseTest {
         // Step 5: Click on any brand name (first brand)
         productsPage.clickFirstBrand();
 
-        // Step 6: Verify user is navigated to brand page and products are displayed
+        // Step 5: Verify that user is navigated to brand page and brand products are displayed
         String firstBrandHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-019 | First brand heading: '{}'", firstBrandHeading);
-        Assert.assertFalse(firstBrandHeading.isEmpty(),
-                "FAIL: First brand page heading should not be empty");
+        Assert.assertEquals(firstBrandHeading.toUpperCase().replaceAll("\\s+", " "), "BRAND - POLO PRODUCTS",
+                "FAIL: Heading should be exactly 'BRAND - POLO PRODUCTS' but was: " + firstBrandHeading);
         Assert.assertTrue(productsPage.hasProducts(),
-                "FAIL: First brand page should display products");
+                "FAIL: Products should be visible for Polo brand");
 
-        // Step 7: Click another brand from left sidebar
+        // Step 6: On left side bar, click on any other brand link
         productsPage.clickSecondBrand();
-
-        // Step 8: Verify user navigated to second brand page with products
         String secondBrandHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-019 | Second brand heading: '{}'", secondBrandHeading);
         Assert.assertFalse(secondBrandHeading.isEmpty(),
