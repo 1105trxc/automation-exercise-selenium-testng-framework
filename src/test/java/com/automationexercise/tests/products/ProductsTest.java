@@ -54,7 +54,7 @@ public class ProductsTest extends BaseTest {
         log.info("TC-AE-007 START");
 
         // Step 4: Click on 'Test Cases' button
-        homePage.clickTestCases();
+        homePage.getHeader().clickTestCases();
 
         // Step 5: Verify that user is navigated to test cases page successfully
         boolean onTestCasesPage = waitForUrlContains(RouteConstants.TEST_CASES);
@@ -89,7 +89,7 @@ public class ProductsTest extends BaseTest {
                 "FAIL: Home page should be visible");
 
         // Step 4: Click on 'Products' button
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
 
         // Step 5: Verify user is navigated to ALL PRODUCTS page successfully
         Assert.assertTrue(productsPage.isAllProductsVisible(),

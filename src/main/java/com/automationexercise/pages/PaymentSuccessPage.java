@@ -104,7 +104,6 @@ public class PaymentSuccessPage extends AEBasePage {
     public HomePage clickContinue() {
         log.info("Clicking Continue on order success page");
         click(CONTINUE_BTN);
-        handleVignette(); // Vignette có thể xuất hiện khi navigate về home
         return new HomePage(driver);
     }
 }

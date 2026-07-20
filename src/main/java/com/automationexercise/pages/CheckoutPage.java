@@ -173,7 +173,7 @@ public class CheckoutPage extends AEBasePage {
      */
     public PaymentPage clickPlaceOrder() {
         log.info("Clicking Place Order");
-        jsClick(PLACE_ORDER_BTN);
+        click(PLACE_ORDER_BTN);
         return new PaymentPage(driver);
     }
 }

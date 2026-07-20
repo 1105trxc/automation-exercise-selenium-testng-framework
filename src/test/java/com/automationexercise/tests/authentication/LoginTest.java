@@ -4,9 +4,12 @@ import com.automationexercise.base.BaseTest;
 import com.automationexercise.dataproviders.TestDataProvider;
 import com.automationexercise.listeners.TestListener;
 import com.automationexercise.models.LoginData;
+import com.automationexercise.models.UserData;
+import com.automationexercise.pages.AccountCreatedPage;
+import com.automationexercise.pages.AccountDeletedPage;
 import com.automationexercise.pages.HomePage;
 import com.automationexercise.pages.LoginPage;
-import com.automationexercise.pages.SignupPage;
+import com.automationexercise.flows.UserFlow;
 import com.automationexercise.utils.RandomDataUtils;
 import io.qameta.allure.*;
 import org.slf4j.Logger;
@@ -73,57 +76,56 @@ public class LoginTest extends BaseTest {
                 "FAIL: Home page should be visible at start of test");
 
         // Steps 4-8: Register new user (pre-condition for login test)
-        log.info("ARRANGE: Registering test user");
-        SignupPage signupPage = homePage
-                .clickLoginSignup()
-                .enterSignupName(uniqueName)
-                .enterSignupEmail(uniqueEmail)
-                .clickSignupButton();
+        UserData testUser = new UserData();
+        testUser.setTitle("Mr");
+        testUser.setName(uniqueName);
+        testUser.setPassword(TEST_PASSWORD);
+        testUser.setDayOfBirth("10");
+        testUser.setMonthOfBirth("3");
+        testUser.setYearOfBirth("1995");
+        testUser.setFirstName(TEST_FIRST_NAME);
+        testUser.setLastName(TEST_LAST_NAME);
+        testUser.setAddress1(TEST_ADDRESS);
+        testUser.setCountry(TEST_COUNTRY);
+        testUser.setState(TEST_STATE);
+        testUser.setCity(TEST_CITY);
+        testUser.setZipcode(TEST_ZIPCODE);
+        testUser.setMobile(TEST_MOBILE);
 
-        Assert.assertTrue(signupPage.isAccountInfoVisible(),
-                "FAIL: 'Enter Account Information' should be visible after clicking Signup");
+        AccountCreatedPage accountCreatedPage =
+                new UserFlow(driver()).registerNewUser(uniqueName, uniqueEmail, testUser);
 
-        homePage = signupPage
-                .fillRegistrationForm(TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME,
-                        TEST_ADDRESS, TEST_COUNTRY, TEST_STATE,
-                        TEST_CITY, TEST_ZIPCODE, TEST_MOBILE)
-                .clickCreateAccount()
-                .clickContinue();
+        homePage = accountCreatedPage.clickContinue();
 
-        Assert.assertTrue(homePage.isUserLoggedIn(),
+        Assert.assertTrue(homePage.getHeader().isUserLoggedIn(),
                 "FAIL: User should be logged in after registration");
+        Assert.assertEquals(homePage.getHeader().getLoggedInUsername(), uniqueName,
+                "FAIL: Username after registration should match " + uniqueName);
 
         // Logout to prepare for actual login test
-        LoginPage loginPage = homePage.clickLogout();
+        LoginPage loginPage = homePage.getHeader().clickLogout();
 
         // ── ACT ──────────────────────────────────────────────────────────
         log.info("TC-AE-002 ACT: Logging in with registered credentials");
         Assert.assertTrue(loginPage.isLoginPageVisible(),
                 "FAIL: 'Login to your account' heading should be visible");
 
-        // Step 6: Enter correct email and password
-        // Step 7: Click 'login' button
-        homePage = loginPage
-                .enterLoginEmail(uniqueEmail)
-                .enterLoginPassword(TEST_PASSWORD)
-                .clickLoginButton();
+        homePage = new UserFlow(driver()).loginSuccessfully(uniqueEmail, TEST_PASSWORD);
 
         // ── ASSERT ───────────────────────────────────────────────────────
-        // Step 8: Verify 'Logged in as username' is visible
-        Assert.assertTrue(homePage.isUserLoggedIn(),
+        Assert.assertTrue(homePage.getHeader().isUserLoggedIn(),
                 "FAIL: User should be logged in after submitting valid credentials");
 
-        String loggedInUsername = homePage.getLoggedInUsername();
-        Assert.assertFalse(loggedInUsername.isEmpty(),
-                "FAIL: 'Logged in as <username>' should be visible in nav");
+        String loggedInUsername = homePage.getHeader().getLoggedInUsername();
+        Assert.assertEquals(loggedInUsername, uniqueName,
+                "FAIL: Logged in username should be exactly: " + uniqueName);
         log.info("TC-AE-002 PASS (login step) | Logged in as: '{}'", loggedInUsername);
 
-        // Step 9: Click 'Delete Account' button
-        homePage.clickDeleteAccount();
+        AccountDeletedPage accountDeletedPage = homePage.getHeader().clickDeleteAccount();
 
-        // Step 10: Verify that 'ACCOUNT DELETED!' is visible
-        Assert.assertTrue(homePage.isAccountDeletedMessageVisible(),
+        Assert.assertTrue(accountDeletedPage.isAccountDeletedVisible(),
                 "FAIL: 'ACCOUNT DELETED!' message should be visible after deletion");
+        com.automationexercise.utils.AccountCleanupService.unregisterAccount(uniqueEmail);
         log.info("TC-AE-002 PASS | Account deleted and confirmed");
     }
 
@@ -165,7 +167,7 @@ public class LoginTest extends BaseTest {
                 "FAIL: Home page should be visible");
 
         // Step 4: Click Signup/Login
-        LoginPage loginPage = homePage.clickLoginSignup();
+        LoginPage loginPage = homePage.getHeader().clickLoginSignup();
 
         // Step 5: Verify 'Login to your account' is visible
         Assert.assertTrue(loginPage.isLoginPageVisible(),
@@ -214,37 +216,40 @@ public class LoginTest extends BaseTest {
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
-        // Register and login a new user
-        SignupPage signupPage = homePage
-                .clickLoginSignup()
-                .enterSignupName(uniqueName)
-                .enterSignupEmail(uniqueEmail)
-                .clickSignupButton();
+        UserData testUser = new UserData();
+        testUser.setTitle("Mr");
+        testUser.setName(uniqueName);
+        testUser.setPassword(TEST_PASSWORD);
+        testUser.setDayOfBirth("10");
+        testUser.setMonthOfBirth("3");
+        testUser.setYearOfBirth("1995");
+        testUser.setFirstName(TEST_FIRST_NAME);
+        testUser.setLastName(TEST_LAST_NAME);
+        testUser.setAddress1(TEST_ADDRESS);
+        testUser.setCountry(TEST_COUNTRY);
+        testUser.setState(TEST_STATE);
+        testUser.setCity(TEST_CITY);
+        testUser.setZipcode(TEST_ZIPCODE);
+        testUser.setMobile(TEST_MOBILE);
 
-        Assert.assertTrue(signupPage.isAccountInfoVisible(),
-                "FAIL: Account info form should be visible");
-
-        homePage = signupPage
-                .fillRegistrationForm(TEST_PASSWORD, TEST_FIRST_NAME, TEST_LAST_NAME,
-                        TEST_ADDRESS, TEST_COUNTRY, TEST_STATE,
-                        TEST_CITY, TEST_ZIPCODE, TEST_MOBILE)
-                .clickCreateAccount()
+        homePage = new UserFlow(driver())
+                .registerNewUser(uniqueName, uniqueEmail, testUser)
                 .clickContinue();
 
-        Assert.assertTrue(homePage.isUserLoggedIn(),
+        Assert.assertTrue(homePage.getHeader().isUserLoggedIn(),
                 "FAIL: User should be logged in before testing logout");
 
         // ── ACT ──────────────────────────────────────────────────────────
         // Step 6: Click 'Logout' button
         log.info("TC-AE-004 ACT: Clicking Logout");
-        LoginPage loginPage = homePage.clickLogout();
+        LoginPage loginPage = homePage.getHeader().clickLogout();
 
         // ── ASSERT ───────────────────────────────────────────────────────
         // Step 7: Verify that user is navigated to login page
         Assert.assertTrue(loginPage.isLoginPageVisible(),
                 "FAIL: User should be redirected to the login page after logout");
 
-        Assert.assertTrue(homePage.isLoginSignupLinkVisible(),
+        Assert.assertTrue(homePage.getHeader().isLoginSignupLinkVisible(),
                 "FAIL: 'Signup / Login' nav link should reappear after logout");
 
         log.info("TC-AE-004 PASS | User successfully logged out");

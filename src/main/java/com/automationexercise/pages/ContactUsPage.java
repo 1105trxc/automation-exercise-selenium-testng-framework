@@ -116,6 +116,7 @@ public class ContactUsPage extends AEBasePage {
      */
     public ContactUsPage clickSubmit() {
         log.info("Clicking Submit button");
+        scrollIntoView(SUBMIT_BUTTON);
         click(SUBMIT_BUTTON);
         // Website shows a browser alert after submit – must accept it
         log.info("Accepting browser confirmation dialog");
@@ -124,14 +125,12 @@ public class ContactUsPage extends AEBasePage {
     }
 
     /**
-     * Clicks "Home" button on success page → navigates back to home.
-     *
-     * NOTE: Gọi handleVignette() vì navigate về trang chủ có thể trigger vignette ad.
+     * Clicks "Home" button after successful submission.
+     * Navigates back to HomePage.
      */
     public HomePage clickHome() {
         log.info("Clicking Home button after contact form submission");
-        jsClick(HOME_BUTTON);
-        handleVignette(); // Dismiss vignette nếu xuất hiện khi về home page
+        click(HOME_BUTTON);
         return new HomePage(driver);
     }
 }

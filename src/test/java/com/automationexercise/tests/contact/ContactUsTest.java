@@ -14,6 +14,7 @@ import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 /**
@@ -67,30 +68,26 @@ public class ContactUsTest extends BaseTest {
         log.info("TC-AE-006 | Upload file path: {}", uploadFilePath);
 
         // ── ACT ──────────────────────────────────────────────────────────
-        // Step 3: Verify home page
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
 
-        // Step 4: Click 'Contact Us' button
-        ContactUsPage contactUsPage = homePage.clickContactUs();
+        ContactUsPage contactUsPage = homePage.getHeader().clickContactUs();
 
-        // Step 5: Verify 'GET IN TOUCH' is visible
         Assert.assertTrue(contactUsPage.isGetInTouchVisible(),
                 "FAIL: 'Get In Touch' heading should be visible on Contact Us page");
         log.info("TC-AE-006 | 'Get In Touch' heading verified");
 
-        // Steps 6-9: Fill form, upload file, submit (alert handled inside clickSubmit())
+        // Fill form, upload file, submit (alert handled inside clickSubmit())
         contactUsPage
                 .enterName(formData.getName())
                 .enterEmail(formData.getEmail())
                 .enterSubject(formData.getSubject())
                 .enterMessage(formData.getMessage())
                 .uploadFile(uploadFilePath)
-                .clickSubmit();  // ← internally calls acceptAlert()
+                .clickSubmit();
 
         // ── ASSERT ───────────────────────────────────────────────────────
-        // Step 10: Verify success message
         Assert.assertTrue(contactUsPage.isSuccessMessageVisible(),
                 "FAIL: Success message should be visible after form submission");
 
@@ -99,10 +96,9 @@ public class ContactUsTest extends BaseTest {
                 "FAIL: Success message should contain 'Success'. Actual: " + successText);
         log.info("TC-AE-006 PASS (form submission) | Success message: '{}'", successText);
 
-        // Step 11: Click 'Home' button and verify home page
         homePage = contactUsPage.clickHome();
         Assert.assertTrue(homePage.isHomePageVisible(),
-                "FAIL: Home page should be visible after clicking Home button");
+                "FAIL: Home page should be visible after returning from Contact Us");
 
         log.info("TC-AE-006 PASS | Contact Us form submitted and verified successfully");
     }
@@ -119,14 +115,15 @@ public class ContactUsTest extends BaseTest {
      * @return Absolute path as String
      */
     private String getUploadFilePath(String resourcePath) {
+        URL resource = getClass().getClassLoader().getResource(resourcePath);
+        if (resource == null) {
+            throw new IllegalStateException("Upload file not found on classpath: " + resourcePath);
+        }
+
         try {
-            URL resource = getClass().getClassLoader().getResource(resourcePath);
-            if (resource == null) {
-                throw new RuntimeException("Upload file not found on classpath: " + resourcePath);
-            }
             return new File(resource.toURI()).getAbsolutePath();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to resolve upload file path: " + resourcePath, e);
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Failed to resolve upload file path: " + resourcePath, e);
         }
     }
 }

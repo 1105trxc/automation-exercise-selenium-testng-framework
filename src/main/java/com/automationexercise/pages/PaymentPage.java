@@ -101,7 +101,7 @@ public class PaymentPage extends AEBasePage {
      */
     public PaymentSuccessPage clickPayAndConfirm() {
         log.info("Clicking Pay and Confirm Order");
-        jsClick(PAY_BUTTON);
+        click(PAY_BUTTON);
         return new PaymentSuccessPage(driver);
     }
 

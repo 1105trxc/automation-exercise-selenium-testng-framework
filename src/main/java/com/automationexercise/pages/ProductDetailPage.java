@@ -75,9 +75,6 @@ public class ProductDetailPage extends AEBasePage {
     /** "Add to cart" button */
     private static final By ADD_TO_CART_BTN  = By.cssSelector(".product-information .cart");
 
-    /** "View Cart" link trong modal sau add to cart */
-    private static final By VIEW_CART_MODAL  = By.cssSelector(".modal-body a[href='/view_cart']");
-
     // -----------------------------------------------------------------
     // Locators – Review Section (TC-021)
     // -----------------------------------------------------------------
@@ -158,16 +155,6 @@ public class ProductDetailPage extends AEBasePage {
         log.info("Clicking Add to Cart on product detail page");
         click(ADD_TO_CART_BTN);
         return this;
-    }
-
-    /**
-     * Click "View Cart" từ modal sau khi add to cart.
-     * Returns CartPage vì navigate đến /view_cart.
-     */
-    public CartPage clickViewCart() {
-        log.info("Clicking View Cart from modal");
-        jsClick(VIEW_CART_MODAL);
-        return new CartPage(driver);
     }
 
     // -----------------------------------------------------------------

@@ -57,16 +57,16 @@ public class SubscriptionTest extends BaseTest {
         homePage.goToBottom();
 
         // Step 5: Verify text 'SUBSCRIPTION'
-        Assert.assertTrue(homePage.isSubscriptionVisible(),
+        Assert.assertTrue(homePage.getFooterSubscription().isSubscriptionVisible(),
                 "FAIL: 'SUBSCRIPTION' text should be visible in footer");
 
         // Step 6: Enter email address and click arrow button
         String subscribeEmail = RandomDataUtils.generateUniqueEmail();
-        homePage.enterSubscriptionEmail(subscribeEmail)
+        homePage.getFooterSubscription().enterSubscriptionEmail(subscribeEmail)
                 .clickSubscribeButton();
 
         // Step 7: Verify success message
-        Assert.assertTrue(homePage.isSubscribeSuccessVisible(),
+        Assert.assertTrue(homePage.getFooterSubscription().isSubscribeSuccessVisible(),
                 "FAIL: 'You have been successfully subscribed!' should be visible");
 
         log.info("TC-AE-010 PASS | Email: {}", subscribeEmail);
@@ -95,22 +95,22 @@ public class SubscriptionTest extends BaseTest {
                 "FAIL: Home page should be visible");
 
         // Step 4: Click 'Cart' button
-        CartPage cartPage = homePage.clickCart();
+        CartPage cartPage = homePage.getHeader().clickCart();
 
         // Step 5: Scroll down to footer
         cartPage.goToBottom();
 
         // Step 6: Verify text 'SUBSCRIPTION'
-        Assert.assertTrue(cartPage.isSubscriptionVisible(),
+        Assert.assertTrue(cartPage.getFooterSubscription().isSubscriptionVisible(),
                 "FAIL: 'SUBSCRIPTION' text should be visible in Cart page footer");
 
         // Step 7: Enter email address and click arrow button
         String subscribeEmail = RandomDataUtils.generateUniqueEmail();
-        cartPage.enterSubscriptionEmail(subscribeEmail)
+        cartPage.getFooterSubscription().enterSubscriptionEmail(subscribeEmail)
                 .clickSubscribeButton();
 
         // Step 8: Verify success message
-        Assert.assertTrue(cartPage.isSubscribeSuccessVisible(),
+        Assert.assertTrue(cartPage.getFooterSubscription().isSubscribeSuccessVisible(),
                 "FAIL: 'You have been successfully subscribed!' should be visible on Cart page");
 
         log.info("TC-AE-011 PASS | Email: {}", subscribeEmail);

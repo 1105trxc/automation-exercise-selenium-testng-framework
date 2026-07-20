@@ -44,7 +44,7 @@ public class ReviewTest extends BaseTest {
 
         // Step 3: Click on 'Products' button
         HomePage homePage = new HomePage(driver());
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
 
         // Step 4: Verify ALL PRODUCTS page
         Assert.assertTrue(productsPage.isAllProductsVisible(),
