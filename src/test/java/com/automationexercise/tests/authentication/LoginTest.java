@@ -188,6 +188,8 @@ public class LoginTest extends BaseTest {
         Assert.assertEquals(actualError,
                 loginData.getExpectedError(),
                 "FAIL: Error message text does not match expected value from JSON");
+        Assert.assertFalse(loginPage.getHeader().isUserLoggedIn(),
+                "FAIL: Invalid credentials must not create an authenticated session");
 
         log.info("TC-AE-003 PASS | Error message verified: '{}'", actualError);
     }

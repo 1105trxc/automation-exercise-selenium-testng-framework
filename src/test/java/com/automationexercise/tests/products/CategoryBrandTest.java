@@ -11,6 +11,8 @@ import org.testng.Assert;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+import java.util.Locale;
+
 /**
  * CategoryBrandTest – Automated tests for TC-AE-018 và TC-AE-019.
  *
@@ -21,12 +23,6 @@ import org.testng.annotations.Test;
  * TC-AE-019: View & Cart Brand Products
  *   Products page → verify brands sidebar → click first brand → verify brand page
  *   → click second brand → verify brand page.
- *
- * NOTE VỀ TC-018 HEADING:
- * Test case gốc ghi "WOMEN - TOPS PRODUCTS" nhưng step 5 click "Dress".
- * Actual website: click Women → click first subcategory (Dress) → heading là
- * "WOMEN - DRESS PRODUCTS". Chúng ta verify heading is NOT empty (dynamic check)
- * thay vì hardcode expected text, để tránh breaking nếu site thay đổi categories.
  */
 @Listeners(TestListener.class)
 @Epic("Products")
@@ -113,27 +109,35 @@ public class CategoryBrandTest extends BaseTest {
         Assert.assertTrue(productsPage.isBrandSectionVisible(),
                 "FAIL: Brands sidebar should be visible on Products page");
 
-        // Step 5: Click on any brand name (first brand)
-        productsPage.clickFirstBrand();
+        String firstBrand = productsPage.getBrandNameAt(1);
+        String secondBrand = productsPage.getBrandNameAt(2);
+        productsPage.clickBrandAt(1);
 
         // Step 5: Verify that user is navigated to brand page and brand products are displayed
         String firstBrandHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-019 | First brand heading: '{}'", firstBrandHeading);
-        Assert.assertEquals(firstBrandHeading.toUpperCase().replaceAll("\\s+", " "), "BRAND - POLO PRODUCTS",
-                "FAIL: Heading should be exactly 'BRAND - POLO PRODUCTS' but was: " + firstBrandHeading);
+        Assert.assertEquals(normalizeHeading(firstBrandHeading), expectedBrandHeading(firstBrand),
+                "FAIL: Heading should match the selected brand: " + firstBrand);
         Assert.assertTrue(productsPage.hasProducts(),
                 "FAIL: Products should be visible for Polo brand");
 
-        // Step 6: On left side bar, click on any other brand link
-        productsPage.clickSecondBrand();
+        productsPage.clickBrandAt(2);
         String secondBrandHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-019 | Second brand heading: '{}'", secondBrandHeading);
-        Assert.assertFalse(secondBrandHeading.isEmpty(),
-                "FAIL: Second brand page heading should not be empty");
+        Assert.assertEquals(normalizeHeading(secondBrandHeading), expectedBrandHeading(secondBrand),
+                "FAIL: Heading should match the selected brand: " + secondBrand);
         Assert.assertTrue(productsPage.hasProducts(),
                 "FAIL: Second brand page should display products");
 
         log.info("TC-AE-019 PASS | Brand1: '{}' | Brand2: '{}'",
                 firstBrandHeading, secondBrandHeading);
+    }
+
+    private static String expectedBrandHeading(String brandName) {
+        return "BRAND - " + brandName.toUpperCase(Locale.ROOT) + " PRODUCTS";
+    }
+
+    private static String normalizeHeading(String heading) {
+        return heading.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
     }
 }

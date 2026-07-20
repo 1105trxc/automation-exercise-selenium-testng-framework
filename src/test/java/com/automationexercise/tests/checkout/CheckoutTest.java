@@ -27,10 +27,8 @@ import org.testng.annotations.Test;
 public class CheckoutTest extends BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(CheckoutTest.class);
-
-    private boolean isOnCheckoutPage() {
-        return driver().getCurrentUrl().contains("/checkout");
-    }
+    private static final String EXPECTED_ORDER_SUCCESS_MESSAGE =
+            "Congratulations! Your order has been placed successfully!";
 
     @Test(
         description = "TC-AE-014 - Place Order: Register while Checkout",
@@ -58,11 +56,12 @@ public class CheckoutTest extends BaseTest {
         HomePage homePage = accountCreatedPage.clickContinue();
         cartPage = homePage.getHeader().clickCart();
         CheckoutPage checkoutPage = cartPage.clickProceedToCheckoutLoggedIn();
-        Assert.assertTrue(isOnCheckoutPage(), "FAIL: Should be on checkout page");
+        Assert.assertTrue(checkoutPage.isDeliveryAddressVisible(),
+                "FAIL: Delivery address should be visible on checkout page");
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
         PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
-        Assert.assertTrue(successPage.isOrderPlacedSuccessfully(), "FAIL: Order not placed");
+        assertOrderPlaced(successPage);
 
         homePage = successPage.clickContinue();
         AccountDeletedPage deletedPage = homePage.getHeader().clickDeleteAccount();
@@ -88,7 +87,7 @@ public class CheckoutTest extends BaseTest {
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
         PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
-        Assert.assertTrue(successPage.isOrderPlacedSuccessfully(), "FAIL: Order not placed");
+        assertOrderPlaced(successPage);
 
         AccountDeletedPage deletedPage = successPage.clickContinue().getHeader().clickDeleteAccount();
         Assert.assertTrue(deletedPage.isAccountDeletedVisible(), "FAIL: Account should be deleted");
@@ -117,7 +116,7 @@ public class CheckoutTest extends BaseTest {
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
         PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
-        Assert.assertTrue(successPage.isOrderPlacedSuccessfully(), "FAIL: Order not placed");
+        assertOrderPlaced(successPage);
 
         AccountDeletedPage deletedPage = successPage.clickContinue().getHeader().clickDeleteAccount();
         Assert.assertTrue(deletedPage.isAccountDeletedVisible(), "FAIL: Account should be deleted");
@@ -139,10 +138,13 @@ public class CheckoutTest extends BaseTest {
         CartPage cartPage = new CartFlow(driver()).addFirstProductAndGoToCart();
         CheckoutPage checkoutPage = cartPage.clickProceedToCheckoutLoggedIn();
 
-        Assert.assertTrue(checkoutPage.isDeliveryAddressVisible());
-        Assert.assertTrue(checkoutPage.isBillingAddressVisible());
+        CheckoutPage.AddressSnapshot expectedAddress = expectedAddress(user);
+        Assert.assertEquals(checkoutPage.getDeliveryAddress(), expectedAddress,
+                "FAIL: Delivery address should exactly match registration data");
+        Assert.assertEquals(checkoutPage.getBillingAddress(), expectedAddress,
+                "FAIL: Billing address should exactly match registration data");
 
-        AccountDeletedPage deletedPage = new HomePage(driver()).getHeader().clickDeleteAccount();
+        AccountDeletedPage deletedPage = checkoutPage.getHeader().clickDeleteAccount();
         Assert.assertTrue(deletedPage.isAccountDeletedVisible(), "FAIL: Account should be deleted");
         AccountCleanupService.unregisterAccount(uniqueEmail);
     }
@@ -169,11 +171,13 @@ public class CheckoutTest extends BaseTest {
 
         HomePage homePage = accountCreatedPage.clickContinue();
         cartPage = homePage.getHeader().clickCart();
+        String expectedInvoiceTotal = cartPage.getCartItems().getFirst().total();
         CheckoutPage checkoutPage = cartPage.clickProceedToCheckoutLoggedIn();
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
         PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
 
+        assertOrderPlaced(successPage);
         Assert.assertTrue(successPage.isDownloadInvoiceVisible(), "FAIL: 'Download Invoice' button should be visible");
         successPage.clickDownloadInvoice();
 
@@ -186,6 +190,8 @@ public class CheckoutTest extends BaseTest {
         String invoiceContent = com.automationexercise.utils.DownloadManager.readFileContent(invoiceFile);
         Assert.assertTrue(invoiceContent.contains("Hi " + user.getFirstName() + " " + user.getLastName()),
                 "FAIL: Invoice should contain the user's name");
+        Assert.assertTrue(invoiceContent.contains(expectedInvoiceTotal),
+                "FAIL: Invoice should contain the cart total: " + expectedInvoiceTotal);
 
         homePage = successPage.clickContinue();
         AccountDeletedPage deletedPage = homePage.getHeader().clickDeleteAccount();
@@ -200,5 +206,22 @@ public class CheckoutTest extends BaseTest {
         } catch (java.io.IOException e) {
             throw new AssertionError("FAIL: Could not read invoice file size: " + invoiceFile, e);
         }
+    }
+
+    private void assertOrderPlaced(PaymentSuccessPage successPage) {
+        Assert.assertEquals(successPage.getOrderSuccessMessage(), EXPECTED_ORDER_SUCCESS_MESSAGE,
+                "FAIL: Order success message should match the required business outcome");
+    }
+
+    private CheckoutPage.AddressSnapshot expectedAddress(UserData user) {
+        return new CheckoutPage.AddressSnapshot(
+                user.getTitle() + ". " + user.getFirstName() + " " + user.getLastName(),
+                user.getCompany(),
+                user.getAddress1(),
+                user.getAddress2(),
+                user.getCity() + " " + user.getState() + " " + user.getZipcode(),
+                user.getCountry(),
+                user.getMobile()
+        );
     }
 }

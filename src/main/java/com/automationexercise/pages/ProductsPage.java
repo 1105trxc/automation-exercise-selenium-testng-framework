@@ -211,13 +211,7 @@ public class ProductsPage extends AEBasePage {
     // Add to Cart Actions (TC-012, TC-020)
     // -----------------------------------------------------------------
 
-    /**
-     * Hover sản phẩm đầu tiên và click "Add to cart".
-     *
-     * FLOW: hoverOver(wrapper) → click(Add to cart)
-     * Dùng JS click để bypass lỗi ElementClickIntercepted do thẻ overlay che khuất
-     * button chính khi hover.
-     */
+    /** Hover the first product and click its overlay "Add to cart" button. */
     public ProductsPage hoverAndAddFirstProductToCart() {
         log.info("Hovering first product and clicking Add to Cart");
         scrollIntoView(FIRST_PRODUCT_WRAPPER);
@@ -348,23 +342,5 @@ public class ProductsPage extends AEBasePage {
         log.info("Clicking brand #{}: '{}'", oneBasedIndex, brandName);
         click(locator);
         return this;
-    }
-
-    /**
-     * Click brand đầu tiên trong sidebar.
-     * @deprecated Use {@link #clickBrandAt(int)} for explicit index control.
-     */
-    @Deprecated
-    public ProductsPage clickFirstBrand() {
-        return clickBrandAt(1);
-    }
-
-    /**
-     * Click brand thứ hai trong sidebar.
-     * @deprecated Use {@link #clickBrandAt(int)} for explicit index control.
-     */
-    @Deprecated
-    public ProductsPage clickSecondBrand() {
-        return clickBrandAt(2);
     }
 }

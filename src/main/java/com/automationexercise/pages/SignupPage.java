@@ -133,8 +133,18 @@ public class SignupPage extends AEBasePage {
         return this;
     }
 
+    public SignupPage enterCompany(String company) {
+        type(COMPANY, company);
+        return this;
+    }
+
     public SignupPage enterAddress(String address) {
         type(ADDRESS_1, address);
+        return this;
+    }
+
+    public SignupPage enterAddress2(String address) {
+        type(ADDRESS_2, address);
         return this;
     }
 
@@ -180,7 +190,13 @@ public class SignupPage extends AEBasePage {
         checkNewsletter();
         enterFirstName(user.getFirstName());
         enterLastName(user.getLastName());
+        if (user.getCompany() != null && !user.getCompany().isBlank()) {
+            enterCompany(user.getCompany());
+        }
         enterAddress(user.getAddress1());
+        if (user.getAddress2() != null && !user.getAddress2().isBlank()) {
+            enterAddress2(user.getAddress2());
+        }
         selectCountry(user.getCountry());
         enterState(user.getState());
         enterCity(user.getCity());

@@ -2,6 +2,7 @@ package com.automationexercise.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,29 +48,12 @@ public class CheckoutPage extends AEBasePage {
     /** Billing address block */
     private static final By BILLING_ADDRESS_BLOCK    = By.id("address_invoice");
 
-    /** Full name trong delivery address */
-    private static final By DELIVERY_NAME = By.cssSelector(
-            "#address_delivery .address_firstname.address_lastname");
-
-    /** Street address trong delivery (Address 1) - luôn là thẻ li thứ 4 */
-    private static final By DELIVERY_ADDRESS = By.cssSelector(
-            "#address_delivery li:nth-child(4)");
-
-    /** City, State, Zip trong delivery */
-    private static final By DELIVERY_CITY_STATE_ZIP = By.cssSelector(
-            "#address_delivery .address_city.address_state_name.address_postcode");
-
-    /** Country trong delivery */
-    private static final By DELIVERY_COUNTRY = By.cssSelector(
-            "#address_delivery .address_country_name");
-
-    /** Full name trong billing address */
-    private static final By BILLING_NAME = By.cssSelector(
-            "#address_invoice .address_firstname.address_lastname");
-
-    /** Street address trong billing (Address 1) - luôn là thẻ li thứ 4 */
-    private static final By BILLING_ADDRESS = By.cssSelector(
-            "#address_invoice li:nth-child(4)");
+    private static final By ADDRESS_NAME = By.cssSelector(".address_firstname.address_lastname");
+    private static final By ADDRESS_LINES = By.cssSelector(".address_address1.address_address2");
+    private static final By ADDRESS_CITY_STATE_ZIP =
+            By.cssSelector(".address_city.address_state_name.address_postcode");
+    private static final By ADDRESS_COUNTRY = By.cssSelector(".address_country_name");
+    private static final By ADDRESS_PHONE = By.cssSelector(".address_phone");
 
     // -----------------------------------------------------------------
     // Locators – Order actions
@@ -112,48 +96,46 @@ public class CheckoutPage extends AEBasePage {
     // Address Getters (for TC-023 address verification)
     // -----------------------------------------------------------------
 
-    /**
-     * Trả về tên đầy đủ trong delivery address.
-     * Format: "Mr John Doe" hoặc "Mrs Jane Smith"
-     */
-    public String getDeliveryFullName() {
-        return getText(DELIVERY_NAME);
+    public AddressSnapshot getDeliveryAddress() {
+        return getAddressSnapshot(DELIVERY_ADDRESS_BLOCK);
     }
 
-    /**
-     * Trả về địa chỉ đường phố trong delivery address.
-     */
-    public String getDeliveryStreetAddress() {
-        return getText(DELIVERY_ADDRESS);
+    public AddressSnapshot getBillingAddress() {
+        return getAddressSnapshot(BILLING_ADDRESS_BLOCK);
     }
 
-    /**
-     * Trả về "City State Postcode" từ delivery address.
-     */
-    public String getDeliveryCityStateZip() {
-        return getText(DELIVERY_CITY_STATE_ZIP);
+    private AddressSnapshot getAddressSnapshot(By blockLocator) {
+        WebElement block = waitUntilVisible(blockLocator);
+        java.util.List<WebElement> addressLines = block.findElements(ADDRESS_LINES);
+        if (addressLines.size() < 3) {
+            throw new IllegalStateException(
+                    "Expected company, address1 and address2 in checkout address block, found "
+                            + addressLines.size());
+        }
+
+        return new AddressSnapshot(
+                normalizedText(block.findElement(ADDRESS_NAME)),
+                normalizedText(addressLines.get(0)),
+                normalizedText(addressLines.get(1)),
+                normalizedText(addressLines.get(2)),
+                normalizedText(block.findElement(ADDRESS_CITY_STATE_ZIP)),
+                normalizedText(block.findElement(ADDRESS_COUNTRY)),
+                normalizedText(block.findElement(ADDRESS_PHONE))
+        );
     }
 
-    /**
-     * Trả về quốc gia trong delivery address.
-     */
-    public String getDeliveryCountry() {
-        return getText(DELIVERY_COUNTRY);
+    private String normalizedText(WebElement element) {
+        return element.getText().trim().replaceAll("\\s+", " ");
     }
 
-    /**
-     * Trả về tên đầy đủ trong billing address.
-     */
-    public String getBillingFullName() {
-        return getText(BILLING_NAME);
-    }
-
-    /**
-     * Trả về địa chỉ đường phố trong billing address.
-     */
-    public String getBillingStreetAddress() {
-        return getText(BILLING_ADDRESS);
-    }
+    public record AddressSnapshot(
+            String fullName,
+            String company,
+            String address1,
+            String address2,
+            String cityStateZip,
+            String country,
+            String mobile) {}
 
     // -----------------------------------------------------------------
     // Order Actions

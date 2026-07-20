@@ -24,12 +24,6 @@ import org.slf4j.LoggerFactory;
  *   <a href="/" data-qa="continue-button">Continue</a>
  * </div>
  *
- * NOTE: Website hiện có 2 text messages khác nhau:
- * - h2: "Congratulations! Your order has been confirmed!"
- * - p:  "Congratulations! Your order has been placed successfully!"
- * Test case gốc verify "placed successfully" → dùng p tag.
- * Tuy nhiên, h2 với data-qa="order-placed" là selector ổn định hơn.
- * Chúng ta verify h2 visible để confirm order placed, vì data-qa ổn định hơn.
  */
 public class PaymentSuccessPage extends AEBasePage {
 
@@ -39,11 +33,8 @@ public class PaymentSuccessPage extends AEBasePage {
     // Locators
     // -----------------------------------------------------------------
 
-    /**
-     * "Order Placed" confirmation heading.
-     * data-qa="order-placed" là selector ổn định nhất, không phụ thuộc text.
-     */
-    private static final By ORDER_PLACED_HEADING = By.cssSelector("h2[data-qa='order-placed']");
+    private static final By ORDER_SUCCESS_MESSAGE = By.xpath(
+            "//p[contains(normalize-space(.),'Your order has been placed successfully!')]");
 
     /**
      * "Download Invoice" button (chỉ có ở TC-024).
@@ -67,14 +58,8 @@ public class PaymentSuccessPage extends AEBasePage {
     // State Verification
     // -----------------------------------------------------------------
 
-    /**
-     * Xác nhận order đã được đặt thành công.
-     *
-     * Test case step: "Verify success message 'Your order has been placed successfully!'"
-     * Chúng ta verify bằng heading h2[data-qa='order-placed'] vì ổn định hơn text match.
-     */
-    public boolean isOrderPlacedSuccessfully() {
-        return isDisplayed(ORDER_PLACED_HEADING, 15);
+    public String getOrderSuccessMessage() {
+        return getText(ORDER_SUCCESS_MESSAGE);
     }
 
     /** Xác nhận "Download Invoice" button visible (TC-024) */
@@ -86,11 +71,7 @@ public class PaymentSuccessPage extends AEBasePage {
     // Actions
     // -----------------------------------------------------------------
 
-    /**
-     * Click "Download Invoice" (TC-024).
-     * NOTE: Chỉ verify nút click được; không verify file thực tế download
-     * vì điều đó phụ thuộc vào browser config / OS – nằm ngoài scope UI automation.
-     */
+    /** Click "Download Invoice" (TC-024). */
     public PaymentSuccessPage clickDownloadInvoice() {
         log.info("Clicking Download Invoice");
         click(DOWNLOAD_INVOICE_BTN);

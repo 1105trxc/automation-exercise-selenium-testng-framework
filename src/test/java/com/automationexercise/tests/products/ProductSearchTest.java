@@ -9,6 +9,7 @@ import com.automationexercise.pages.AccountCreatedPage;
 import com.automationexercise.pages.AccountDeletedPage;
 import com.automationexercise.pages.CartPage;
 import com.automationexercise.pages.HomePage;
+import com.automationexercise.pages.LoginPage;
 import com.automationexercise.pages.ProductsPage;
 import com.automationexercise.utils.AccountCleanupService;
 import com.automationexercise.utils.JsonDataReader;
@@ -21,6 +22,7 @@ import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * ProductSearchTest – TC-AE-009 and TC-AE-020.
@@ -70,7 +72,8 @@ public class ProductSearchTest extends BaseTest {
 
         List<String> productNames = productsPage.getVisibleProductNames();
         for (String name : productNames) {
-            Assert.assertTrue(name.toLowerCase().contains(SEARCH_KEYWORD.split(" ")[0].toLowerCase()),
+            Assert.assertTrue(name.toLowerCase(Locale.ROOT)
+                            .contains(SEARCH_KEYWORD.toLowerCase(Locale.ROOT)),
                     "FAIL: Product name '" + name + "' does not contain keyword '" + SEARCH_KEYWORD + "'");
         }
 
@@ -110,10 +113,10 @@ public class ProductSearchTest extends BaseTest {
         homePage = accountCreatedPage.clickContinue();
 
         // Logout to simulate guest state before search
-        homePage.getHeader().clickLogout();
+        LoginPage loginPage = homePage.getHeader().clickLogout();
 
         // ACT: Search as guest, add to cart via CartFlow
-        ProductsPage productsPage = new HomePage(driver()).getHeader().clickProducts();
+        ProductsPage productsPage = loginPage.getHeader().clickProducts();
         Assert.assertTrue(productsPage.isAllProductsVisible(),
                 "FAIL: All Products page should be visible");
 
@@ -134,8 +137,8 @@ public class ProductSearchTest extends BaseTest {
         log.info("TC-AE-020 | Cart has {} item(s) before login", itemsBeforeLogin.size());
 
         // Login with the registered account
-        new UserFlow(driver()).loginSuccessfully(uniqueEmail, TEST_PASSWORD);
-        cartPage = new HomePage(driver()).getHeader().clickCart();
+        homePage = new UserFlow(driver()).loginSuccessfully(uniqueEmail, TEST_PASSWORD);
+        cartPage = homePage.getHeader().clickCart();
 
         // Verify cart identity preserved (not just count)
         List<CartPage.CartItemSnapshot> itemsAfterLogin = cartPage.getCartItems();
@@ -145,7 +148,7 @@ public class ProductSearchTest extends BaseTest {
         log.info("TC-AE-020 PASS | Cart identity preserved ({} item(s))", itemsAfterLogin.size());
 
         // CLEANUP: Delete account via UI, then unregister from API cleanup
-        AccountDeletedPage deletedPage = new HomePage(driver()).getHeader().clickDeleteAccount();
+        AccountDeletedPage deletedPage = cartPage.getHeader().clickDeleteAccount();
         Assert.assertTrue(deletedPage.isAccountDeletedVisible(),
                 "FAIL: Account should be deleted");
         AccountCleanupService.unregisterAccount(uniqueEmail);
