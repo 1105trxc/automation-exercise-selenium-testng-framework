@@ -9,17 +9,13 @@ import org.slf4j.LoggerFactory;
  * PaymentSuccessPage – Page Object cho trang xác nhận đặt hàng thành công (/payment_done).
  *
  * Test Cases:
- * - TC-AE-014, 015, 016: Verify "Your order has been placed successfully!"
+ * - TC-AE-014, 015, 016: Verify the order confirmation state
  * - TC-AE-024: Click "Download Invoice" + Continue
  *
  * HTML STRUCTURE:
  * <div class="col-sm-9 col-sm-offset-1">
- *   <h2 data-qa="order-placed">
- *     <b>Congratulations! Your order has been confirmed!</b>
- *   </h2>
- *   <p>Congratulations! Your order has been placed successfully!
- *      You order id is...
- *   </p>
+ *   <h2 data-qa="order-placed"><b>Order Placed!</b></h2>
+ *   <p>Congratulations! Your order has been confirmed!</p>
  *   <a href="..." class="btn">Download Invoice</a>
  *   <a href="/" data-qa="continue-button">Continue</a>
  * </div>
@@ -33,8 +29,10 @@ public class PaymentSuccessPage extends AEBasePage {
     // Locators
     // -----------------------------------------------------------------
 
+    private static final By ORDER_PLACED_HEADING = By.cssSelector("h2[data-qa='order-placed']");
+
     private static final By ORDER_SUCCESS_MESSAGE = By.xpath(
-            "//p[contains(normalize-space(.),'Your order has been placed successfully!')]");
+            "//p[normalize-space()='Congratulations! Your order has been confirmed!']");
 
     /**
      * "Download Invoice" button (chỉ có ở TC-024).
@@ -60,6 +58,10 @@ public class PaymentSuccessPage extends AEBasePage {
 
     public String getOrderSuccessMessage() {
         return getText(ORDER_SUCCESS_MESSAGE);
+    }
+
+    public String getOrderPlacedHeading() {
+        return getText(ORDER_PLACED_HEADING);
     }
 
     /** Xác nhận "Download Invoice" button visible (TC-024) */

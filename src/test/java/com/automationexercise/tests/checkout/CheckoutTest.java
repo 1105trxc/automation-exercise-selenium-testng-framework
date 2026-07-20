@@ -27,8 +27,9 @@ import org.testng.annotations.Test;
 public class CheckoutTest extends BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(CheckoutTest.class);
+    private static final String EXPECTED_ORDER_PLACED_HEADING = "ORDER PLACED!";
     private static final String EXPECTED_ORDER_SUCCESS_MESSAGE =
-            "Congratulations! Your order has been placed successfully!";
+            "Congratulations! Your order has been confirmed!";
 
     @Test(
         description = "TC-AE-014 - Place Order: Register while Checkout",
@@ -188,10 +189,13 @@ public class CheckoutTest extends BaseTest {
         assertDownloadedFileIsNotEmpty(invoiceFile);
 
         String invoiceContent = com.automationexercise.utils.DownloadManager.readFileContent(invoiceFile);
-        Assert.assertTrue(invoiceContent.contains("Hi " + user.getFirstName() + " " + user.getLastName()),
-                "FAIL: Invoice should contain the user's name");
-        Assert.assertTrue(invoiceContent.contains(expectedInvoiceTotal),
-                "FAIL: Invoice should contain the cart total: " + expectedInvoiceTotal);
+        String expectedInvoiceContent = "Hi %s %s, Your total purchase amount is %s. Thank you".formatted(
+                user.getFirstName(),
+                user.getLastName(),
+                expectedInvoiceTotal.replace("Rs.", "").trim()
+        );
+        Assert.assertEquals(invoiceContent.strip(), expectedInvoiceContent,
+                "FAIL: Invoice should exactly identify the customer and purchased amount");
 
         homePage = successPage.clickContinue();
         AccountDeletedPage deletedPage = homePage.getHeader().clickDeleteAccount();
@@ -209,6 +213,8 @@ public class CheckoutTest extends BaseTest {
     }
 
     private void assertOrderPlaced(PaymentSuccessPage successPage) {
+        Assert.assertEquals(successPage.getOrderPlacedHeading(), EXPECTED_ORDER_PLACED_HEADING,
+                "FAIL: Order confirmation heading should identify the completed order state");
         Assert.assertEquals(successPage.getOrderSuccessMessage(), EXPECTED_ORDER_SUCCESS_MESSAGE,
                 "FAIL: Order success message should match the required business outcome");
     }
