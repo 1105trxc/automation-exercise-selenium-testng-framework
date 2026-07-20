@@ -80,28 +80,6 @@ public class CartPage extends AEBasePage {
     /** "Register / Login" link – xuất hiện trong modal khi chưa login */
     private static final By REGISTER_LOGIN_LINK = By.cssSelector("#checkoutModal .modal-body a");
 
-    /** "Continue Shopping" button trong modal sau Add to Cart */
-    private static final By CONTINUE_SHOPPING_BTN = By.cssSelector("button.close-modal");
-
-    /** "View Cart" link trong modal sau Add to Cart */
-    private static final By VIEW_CART_MODAL_LINK = By.cssSelector(".modal-body a[href='/view_cart']");
-
-    // -----------------------------------------------------------------
-    // Locators – Footer Subscription (TC-011)
-    // -----------------------------------------------------------------
-
-    /** "SUBSCRIPTION" heading ở footer */
-    private static final By SUBSCRIPTION_HEADING = By.xpath("//h2[normalize-space()='Subscription']");
-
-    /** Email input trong subscription form */
-    private static final By SUBSCRIBE_EMAIL_INPUT = By.id("susbscribe_email");
-
-    /** Arrow button để submit subscription */
-    private static final By SUBSCRIBE_BUTTON = By.id("subscribe");
-
-    /** Success message sau khi subscribe */
-    private static final By SUBSCRIBE_SUCCESS_MSG = By.cssSelector("div.alert-success");
-
     // -----------------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------------
@@ -130,11 +108,50 @@ public class CartPage extends AEBasePage {
     }
 
     /**
+     * Chờ đến khi giỏ hàng trống (thường dùng sau khi remove product).
+     */
+    public CartPage waitForCartEmpty() {
+        log.info("Waiting for cart to become empty");
+        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
+            .until(org.openqa.selenium.support.ui.ExpectedConditions.numberOfElementsToBe(CART_ROWS, 0));
+        return this;
+    }
+
+    /**
      * Trả về số lượng sản phẩm (row) trong cart.
      */
     public int getProductCount() {
         return driver.findElements(CART_ROWS).size();
     }
+
+    /**
+     * Returns a snapshot of all cart items for identity comparison.
+     *
+     * Use this instead of getProductCount() when you need to verify
+     * that the exact same products (not just the same number) are in the cart.
+     *
+     * @return list of CartItemSnapshot, one per cart row
+     */
+    public List<CartItemSnapshot> getCartItems() {
+        return driver.findElements(CART_ROWS).stream()
+                .map(row -> new CartItemSnapshot(
+                        row.findElement(ROW_PRODUCT_NAME).getText().trim(),
+                        row.findElement(ROW_UNIT_PRICE).getText().trim(),
+                        row.findElement(ROW_QUANTITY).getText().trim(),
+                        row.findElement(ROW_TOTAL).getText().trim()
+                ))
+                .toList();
+    }
+
+    /**
+     * Immutable snapshot of a single cart row for before/after comparison.
+     *
+     * @param name      product name
+     * @param unitPrice unit price text (e.g. "Rs. 500")
+     * @param quantity  quantity text
+     * @param total     total price text
+     */
+    public record CartItemSnapshot(String name, String unitPrice, String quantity, String total) {}
 
     /**
      * Kiểm tra một sản phẩm có trong cart dựa trên tên.
@@ -196,18 +213,25 @@ public class CartPage extends AEBasePage {
     }
 
     /**
-     * Click "Proceed To Checkout".
-     *
-     * NẾU đã login: navigate thẳng đến CheckoutPage.
-     * NẾU chưa login: hiện modal với link "Register / Login".
-     *
-     * Trả về CheckoutPage cho cả 2 trường hợp.
-     * Nếu cần modal → login flow, gọi clickRegisterLoginInModal() trước.
+     * Click "Proceed To Checkout" khi ĐÃ ĐĂNG NHẬP.
+     * Trả về CheckoutPage.
      */
-    public CheckoutPage clickProceedToCheckout() {
-        log.info("Clicking Proceed To Checkout");
-        jsClick(PROCEED_TO_CHECKOUT_BTN);
+    public CheckoutPage clickProceedToCheckoutLoggedIn() {
+        log.info("Clicking Proceed To Checkout (Logged In)");
+        click(PROCEED_TO_CHECKOUT_BTN);
         return new CheckoutPage(driver);
+    }
+
+    /**
+     * Click "Proceed To Checkout" khi LÀ GUEST.
+     * Mở modal "Checkout / Register". Trả về chính CartPage.
+     */
+    public CartPage clickProceedToCheckoutGuest() {
+        log.info("Clicking Proceed To Checkout (Guest)");
+        click(PROCEED_TO_CHECKOUT_BTN);
+        // Wait for modal to appear
+        waitUntilVisible(REGISTER_LOGIN_LINK);
+        return this;
     }
 
     /**
@@ -217,32 +241,8 @@ public class CartPage extends AEBasePage {
      */
     public LoginPage clickRegisterLoginInModal() {
         log.info("Clicking Register / Login in checkout modal");
-        jsClick(REGISTER_LOGIN_LINK);
+        click(REGISTER_LOGIN_LINK);
         return new LoginPage(driver);
-    }
-
-    // -----------------------------------------------------------------
-    // Modal Actions (after "Add to Cart" from ProductsPage)
-    // -----------------------------------------------------------------
-
-    /**
-     * Click "Continue Shopping" trong modal sau Add to Cart.
-     * Đóng modal, ở lại ProductsPage.
-     */
-    public ProductsPage clickContinueShopping() {
-        log.info("Clicking Continue Shopping in modal");
-        click(CONTINUE_SHOPPING_BTN);
-        return new ProductsPage(driver);
-    }
-
-    /**
-     * Click "View Cart" trong modal sau Add to Cart.
-     * Navigate đến CartPage.
-     */
-    public CartPage clickViewCartFromModal() {
-        log.info("Clicking View Cart from modal");
-        jsClick(VIEW_CART_MODAL_LINK);
-        return this;
     }
 
     // -----------------------------------------------------------------
@@ -256,36 +256,5 @@ public class CartPage extends AEBasePage {
     public CartPage goToBottom() {
         scrollToBottom();
         return this;
-    }
-
-    // -----------------------------------------------------------------
-    // Subscription (Footer) – TC-011
-    // -----------------------------------------------------------------
-
-    /** Xác nhận "SUBSCRIPTION" heading ở footer visible */
-    public boolean isSubscriptionVisible() {
-        return isDisplayed(SUBSCRIPTION_HEADING, 5);
-    }
-
-    /**
-     * Nhập email vào subscription form ở footer.
-     * Cần scroll xuống footer trước khi gọi method này.
-     */
-    public CartPage enterSubscriptionEmail(String email) {
-        log.info("Entering subscription email on Cart page");
-        type(SUBSCRIBE_EMAIL_INPUT, email);
-        return this;
-    }
-
-    /** Click arrow button để submit subscription */
-    public CartPage clickSubscribeButton() {
-        log.info("Clicking subscribe button on Cart page");
-        click(SUBSCRIBE_BUTTON);
-        return this;
-    }
-
-    /** Xác nhận success message "You have been successfully subscribed!" */
-    public boolean isSubscribeSuccessVisible() {
-        return isDisplayed(SUBSCRIBE_SUCCESS_MSG, 5);
     }
 }

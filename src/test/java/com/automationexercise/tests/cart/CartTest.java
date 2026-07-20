@@ -62,19 +62,19 @@ public class CartTest extends BaseTest {
                 "FAIL: Home page should be visible");
 
         // Step 4: Click 'Products' button
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
 
         // Step 5: Hover over first product and click 'Add to cart'
         productsPage.hoverAndAddFirstProductToCart();
 
         // Step 6: Click 'Continue Shopping' button
-        productsPage.clickContinueShopping();
+        productsPage.getAddToCartModal().waitForModal().clickContinueShopping();
 
         // Step 7: Hover over second product and click 'Add to cart'
         productsPage.hoverAndAddSecondProductToCart();
 
         // Step 8: Click 'View Cart' button
-        CartPage cartPage = productsPage.clickViewCartFromModal();
+        CartPage cartPage = productsPage.getAddToCartModal().waitForModal().clickViewCart();
 
         // Step 9: Verify both products are added to Cart
         Assert.assertTrue(cartPage.isCartPageVisible(),
@@ -97,8 +97,25 @@ public class CartTest extends BaseTest {
         Assert.assertNotNull(total2,  "FAIL: Product 2 total should not be null");
         Assert.assertEquals(qty2, "1", "FAIL: Product 2 quantity should be 1");
 
+        // Numeric verification: Price * Qty == Total
+        int p1 = extractPrice(price1);
+        int q1 = Integer.parseInt(qty1);
+        int t1 = extractPrice(total1);
+        Assert.assertEquals(p1 * q1, t1, "FAIL: Product 1 Total does not match Price * Quantity");
+
+        int p2 = extractPrice(price2);
+        int q2 = Integer.parseInt(qty2);
+        int t2 = extractPrice(total2);
+        Assert.assertEquals(p2 * q2, t2, "FAIL: Product 2 Total does not match Price * Quantity");
+
         log.info("TC-AE-012 PASS | Product1: price={} total={} | Product2: price={} total={}",
                 price1, total1, price2, total2);
+    }
+
+    private int extractPrice(String rawPriceText) {
+        // Example: "Rs. 500" -> 500
+        String clean = rawPriceText.replaceAll("[^0-9]", "");
+        return Integer.parseInt(clean);
     }
 
     // =====================================================================
@@ -127,7 +144,7 @@ public class CartTest extends BaseTest {
 
         // Step 4: Click 'View Product' for any product on home page
         // Dùng Products page để click View Product đầu tiên
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
         ProductDetailPage detailPage = productsPage.clickFirstProductViewProduct();
 
         // Step 5: Verify product detail is opened
@@ -141,7 +158,7 @@ public class CartTest extends BaseTest {
         detailPage.clickAddToCart();
 
         // Step 8: Click 'View Cart' button
-        CartPage cartPage = detailPage.clickViewCart();
+        CartPage cartPage = detailPage.getAddToCartModal().waitForModal().clickViewCart();
 
         // Step 9: Verify product is displayed in cart with exact quantity
         Assert.assertTrue(cartPage.isCartPageVisible(),
@@ -180,11 +197,11 @@ public class CartTest extends BaseTest {
                 "FAIL: Home page should be visible");
 
         // Step 4: Add product to cart (via ProductsPage)
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
         productsPage.hoverAndAddFirstProductToCart();
 
         // Step 5: Click 'Cart' button (via View Cart from modal)
-        CartPage cartPage = productsPage.clickViewCartFromModal();
+        CartPage cartPage = productsPage.getAddToCartModal().waitForModal().clickViewCart();
 
         // Step 6: Verify cart page is displayed
         Assert.assertTrue(cartPage.isCartPageVisible(),
@@ -197,7 +214,7 @@ public class CartTest extends BaseTest {
 
         // Step 8: Verify product is removed from cart
         // Wait briefly for DOM update after removal
-        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        cartPage.waitForCartEmpty();
         Assert.assertTrue(cartPage.isCartEmpty(),
                 "FAIL: Cart should be empty after removing the product");
 
@@ -238,7 +255,7 @@ public class CartTest extends BaseTest {
         homePage.clickAddFirstRecommendedToCart();
 
         // Step 6: Click on 'View Cart' button
-        CartPage cartPage = homePage.clickViewCartFromModal();
+        CartPage cartPage = homePage.getAddToCartModal().waitForModal().clickViewCart();
 
         // Step 7: Verify product is displayed in cart page
         Assert.assertTrue(cartPage.isCartPageVisible(),

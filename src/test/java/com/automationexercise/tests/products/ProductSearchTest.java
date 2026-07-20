@@ -1,9 +1,16 @@
 package com.automationexercise.tests.products;
 
 import com.automationexercise.base.BaseTest;
+import com.automationexercise.flows.CartFlow;
+import com.automationexercise.flows.UserFlow;
 import com.automationexercise.listeners.TestListener;
 import com.automationexercise.models.UserData;
-import com.automationexercise.pages.*;
+import com.automationexercise.pages.AccountCreatedPage;
+import com.automationexercise.pages.AccountDeletedPage;
+import com.automationexercise.pages.CartPage;
+import com.automationexercise.pages.HomePage;
+import com.automationexercise.pages.ProductsPage;
+import com.automationexercise.utils.AccountCleanupService;
 import com.automationexercise.utils.JsonDataReader;
 import com.automationexercise.utils.RandomDataUtils;
 import io.qameta.allure.*;
@@ -13,15 +20,13 @@ import org.testng.Assert;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 /**
- * ProductSearchTest – Automated tests for TC-AE-009, TC-AE-020.
+ * ProductSearchTest – TC-AE-009 and TC-AE-020.
  *
  * TC-AE-009: Search Product
- *   Navigate to Products page, search for a keyword, verify results.
- *
  * TC-AE-020: Search Products and Verify Cart After Login
- *   Search → add products to cart → verify cart → login → verify cart preserved.
- *   KEY INSIGHT: automationexercise.com giữ cart session sau khi login.
  */
 @Listeners(TestListener.class)
 @Epic("Products")
@@ -52,7 +57,7 @@ public class ProductSearchTest extends BaseTest {
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(), "FAIL: Home page should be visible");
 
-        ProductsPage productsPage = homePage.clickProducts();
+        ProductsPage productsPage = homePage.getHeader().clickProducts();
         Assert.assertTrue(productsPage.isAllProductsVisible(),
                 "FAIL: 'All Products' heading should be visible");
 
@@ -62,6 +67,12 @@ public class ProductSearchTest extends BaseTest {
                 "FAIL: 'Searched Products' heading should be visible after search");
         Assert.assertTrue(productsPage.hasProducts(),
                 "FAIL: At least one search result should be visible for keyword: " + SEARCH_KEYWORD);
+
+        List<String> productNames = productsPage.getVisibleProductNames();
+        for (String name : productNames) {
+            Assert.assertTrue(name.toLowerCase().contains(SEARCH_KEYWORD.split(" ")[0].toLowerCase()),
+                    "FAIL: Product name '" + name + "' does not contain keyword '" + SEARCH_KEYWORD + "'");
+        }
 
         log.info("TC-AE-009 PASS | Found {} result(s)", productsPage.getSearchedProductCount());
     }
@@ -77,80 +88,67 @@ public class ProductSearchTest extends BaseTest {
     @Story("Search")
     @Severity(SeverityLevel.NORMAL)
     @Description(
-        "Searches for products, adds them to cart, verifies cart. " +
-        "Then logs in and verifies cart still contains the products (session persistence)."
+        "Searches for products, adds them to cart via CartFlow, verifies cart. " +
+        "Then logs in and verifies cart identity is preserved (session persistence)."
     )
     public void searchAndVerifyCartAfterLogin() {
-        // ── ARRANGE: Register user first (needed for login step) ──────────
         String uniqueEmail = RandomDataUtils.generateUniqueEmail();
         String uniqueName  = RandomDataUtils.generateName();
         final String TEST_PASSWORD = "Automation@2026";
         log.info("TC-AE-020 START | Keyword: '{}'", SEARCH_KEYWORD);
 
-        // Register + auto-logged in
+        // ARRANGE: Register user for the login step later
         UserData user = JsonDataReader.readFirst("users.json", "validUsers", UserData.class);
+        user.setPassword(TEST_PASSWORD);
+
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(), "FAIL: Home page should be visible");
 
-        SignupPage signupPage = homePage.clickLoginSignup()
-                .enterSignupName(uniqueName)
-                .enterSignupEmail(uniqueEmail)
-                .clickSignupButton();
-        signupPage.fillRegistrationForm(user);
-        signupPage.clickCreateAccount();
-        Assert.assertTrue(signupPage.isAccountCreatedMessageVisible(),
+        AccountCreatedPage accountCreatedPage = new UserFlow(driver()).registerNewUser(uniqueName, uniqueEmail, user);
+        Assert.assertTrue(accountCreatedPage.isAccountCreatedVisible(),
                 "FAIL: Account should be created");
-        homePage = signupPage.clickContinue();
+        homePage = accountCreatedPage.clickContinue();
 
         // Logout to simulate guest state before search
-        homePage.clickLogout();
+        homePage.getHeader().clickLogout();
 
-        // ── ACT: Search as guest, add to cart ─────────────────────────────
-        // Step 3: Click Products
-        ProductsPage productsPage = new HomePage(driver()).clickProducts();
+        // ACT: Search as guest, add to cart via CartFlow
+        ProductsPage productsPage = new HomePage(driver()).getHeader().clickProducts();
         Assert.assertTrue(productsPage.isAllProductsVisible(),
                 "FAIL: All Products page should be visible");
 
-        // Steps 5-7: Search and verify results
         productsPage.searchFor(SEARCH_KEYWORD);
         Assert.assertTrue(productsPage.isSearchedProductsVisible(),
                 "FAIL: 'Searched Products' heading should be visible");
         Assert.assertTrue(productsPage.hasProducts(),
                 "FAIL: Search results should not be empty");
 
-        // Step 8: Add searched products to cart
-        CartPage cartPage = productsPage.addAllSearchedProductsToCart();
+        // CartFlow orchestrates adding all searched products without retry/JS/sleep
+        CartPage cartPage = new CartFlow(driver()).addAllVisibleSearchedProducts(productsPage);
 
-        // Step 9: Verify products in cart
         Assert.assertFalse(cartPage.isCartEmpty(),
                 "FAIL: Cart should have products after adding searched items");
-        int countBeforeLogin = cartPage.getProductCount();
-        log.info("TC-AE-020 | Cart has {} item(s) before login", countBeforeLogin);
 
-        // Step 10: Click Signup/Login and submit login details
-        // Since guest, modal appears when proceeding to checkout → navigate to login page
-        new HomePage(driver()).clickLoginSignup();
-        LoginPage loginPage = new LoginPage(driver());
-        loginPage.enterLoginEmail(uniqueEmail)
-                 .enterLoginPassword(TEST_PASSWORD)
-                 .clickLoginButton();
+        // Snapshot before login for exact identity comparison
+        List<CartPage.CartItemSnapshot> itemsBeforeLogin = cartPage.getCartItems();
+        log.info("TC-AE-020 | Cart has {} item(s) before login", itemsBeforeLogin.size());
 
-        // Step 11: Go to Cart page again
-        cartPage = new HomePage(driver()).clickCart();
+        // Login with the registered account
+        new UserFlow(driver()).loginSuccessfully(uniqueEmail, TEST_PASSWORD);
+        cartPage = new HomePage(driver()).getHeader().clickCart();
 
-        // Step 12: Verify products still in cart
-        Assert.assertFalse(cartPage.isCartEmpty(),
-                "FAIL: Cart should still have products after login");
-        Assert.assertEquals(cartPage.getProductCount(), countBeforeLogin,
-                "FAIL: Cart product count should be preserved after login");
+        // Verify cart identity preserved (not just count)
+        List<CartPage.CartItemSnapshot> itemsAfterLogin = cartPage.getCartItems();
+        Assert.assertEquals(itemsAfterLogin, itemsBeforeLogin,
+                "FAIL: Cart items must be preserved exactly after login");
 
-        log.info("TC-AE-020 PASS | Cart preserved {} item(s) after login", cartPage.getProductCount());
+        log.info("TC-AE-020 PASS | Cart identity preserved ({} item(s))", itemsAfterLogin.size());
 
-        // ── CLEANUP ───────────────────────────────────────────────────────
-        homePage = new HomePage(driver());
-        homePage.clickDeleteAccount();
-        Assert.assertTrue(homePage.isAccountDeletedMessageVisible(),
+        // CLEANUP: Delete account via UI, then unregister from API cleanup
+        AccountDeletedPage deletedPage = new HomePage(driver()).getHeader().clickDeleteAccount();
+        Assert.assertTrue(deletedPage.isAccountDeletedVisible(),
                 "FAIL: Account should be deleted");
+        AccountCleanupService.unregisterAccount(uniqueEmail);
         log.info("TC-AE-020 CLEANUP done");
     }
 }

@@ -2,11 +2,11 @@ package com.automationexercise.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * ProductsPage – Page Object cho trang /products.
@@ -92,16 +92,6 @@ public class ProductsPage extends AEBasePage {
             By.xpath("(//div[@class='productinfo text-center']//a[contains(@class,'add-to-cart')])[2]");
 
     // -----------------------------------------------------------------
-    // Locators – Add to Cart Modal
-    // -----------------------------------------------------------------
-
-    /** "Continue Shopping" button trong modal */
-    private static final By CONTINUE_SHOPPING_BTN = By.cssSelector("button.close-modal");
-
-    /** "View Cart" link trong modal sau khi Add to Cart */
-    private static final By VIEW_CART_MODAL_LINK = By.cssSelector(".modal-body a[href='/view_cart']");
-
-    // -----------------------------------------------------------------
     // Locators – Category Sidebar (TC-018)
     // -----------------------------------------------------------------
 
@@ -183,9 +173,12 @@ public class ProductsPage extends AEBasePage {
         return getText(CATEGORY_PAGE_HEADING);
     }
 
-    /** Đếm số sản phẩm trong kết quả search */
-    public int getSearchedProductCount() {
-        return driver.findElements(ADD_TO_CART_BUTTONS).size();
+
+    /** Trả về danh sách tên các sản phẩm đang hiển thị trên trang */
+    public java.util.List<String> getVisibleProductNames() {
+        return driver.findElements(org.openqa.selenium.By.cssSelector(".productinfo p")).stream()
+                .map(org.openqa.selenium.WebElement::getText)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     // -----------------------------------------------------------------
@@ -195,7 +188,7 @@ public class ProductsPage extends AEBasePage {
     /** Click "View Product" của sản phẩm đầu tiên → ProductDetailPage */
     public ProductDetailPage clickFirstProductViewProduct() {
         log.info("Clicking 'View Product' for first product");
-        jsClick(FIRST_PRODUCT_VIEW);
+        click(FIRST_PRODUCT_VIEW);
         return new ProductDetailPage(driver);
     }
 
@@ -227,9 +220,9 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage hoverAndAddFirstProductToCart() {
         log.info("Hovering first product and clicking Add to Cart");
+        scrollIntoView(FIRST_PRODUCT_WRAPPER);
         hoverOver(FIRST_PRODUCT_WRAPPER);
-        WebElement btn = wait.until(org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated(FIRST_ADD_TO_CART));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        click(FIRST_ADD_TO_CART);
         return this;
     }
 
@@ -238,57 +231,50 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage hoverAndAddSecondProductToCart() {
         log.info("Hovering second product and clicking Add to Cart");
+        scrollIntoView(SECOND_PRODUCT_WRAPPER);
         hoverOver(SECOND_PRODUCT_WRAPPER);
-        WebElement btn = wait.until(org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated(SECOND_ADD_TO_CART));
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", btn);
+        click(SECOND_ADD_TO_CART);
         return this;
     }
 
     /**
-     * Click "Continue Shopping" trong modal sau khi Add to Cart.
-     * Đóng modal, ở lại ProductsPage.
+     * Returns the number of "Add to cart" buttons currently visible in the search results.
+     * Used by CartFlow to control the orchestration loop.
      */
-    public ProductsPage clickContinueShopping() {
-        log.info("Clicking Continue Shopping");
-        click(CONTINUE_SHOPPING_BTN);
-        return this;
+    public int getSearchedProductCount() {
+        return driver.findElements(ADD_TO_CART_BUTTONS).size();
     }
 
     /**
-     * Click "View Cart" trong modal sau khi Add to Cart.
-     * Navigate đến CartPage.
-     */
-    public CartPage clickViewCartFromModal() {
-        log.info("Clicking View Cart from modal");
-        click(VIEW_CART_MODAL_LINK);
-        return new CartPage(driver);
-    }
-
-    /**
-     * Add tất cả sản phẩm trong kết quả search vào cart.
-     * Dùng cho TC-020: sau khi search, add tất cả products.
+     * Scrolls to, hovers over, and clicks "Add to cart" for the product at the given
+     * 1-based index in the search results grid, then returns the resulting modal.
      *
-     * Flow: click Add to Cart → Continue Shopping → lặp lại
-     * Với product cuối cùng: click "View Cart" thay vì Continue Shopping.
+     * CONTRACT:
+     *   - Caller (CartFlow) is responsible for calling this method one product at a time.
+     *   - Uses native WebDriver interactions only: scroll + hover + click.
+     *   - No JS click, no retry loop, no Thread.sleep.
+     *
+     * WHY HOVER?
+     *   Product cards reveal the overlay Add-to-cart button only on hover.
+     *   scrollIntoView() ensures the card is visible in the viewport before hover.
+     *
+     * @param oneBasedIndex 1-based index of the product to add
+     * @return AddToCartModal ready to call .clickContinueShopping() or .clickViewCart()
      */
-    public CartPage addAllSearchedProductsToCart() {
+    public com.automationexercise.components.AddToCartModal addSearchedProductAt(int oneBasedIndex) {
+        By wrapper = By.xpath(
+            "(//div[contains(@class,'product-image-wrapper')])[" + oneBasedIndex + "]"
+        );
+        By overlayButton = By.xpath(
+            "(//div[contains(@class,'productinfo')]//a[contains(@class,'add-to-cart')])[" + oneBasedIndex + "]"
+        );
 
-        List<WebElement> addButtons = driver.findElements(ADD_TO_CART_BUTTONS);
-        log.info("Adding {} searched products to cart", addButtons.size());
+        log.info("Adding searched product #{} to cart", oneBasedIndex);
+        scrollIntoView(wrapper);
+        hoverOver(wrapper);
+        click(overlayButton);
 
-        for (int i = 0; i < addButtons.size(); i++) {
-            // Re-fetch buttons sau mỗi iteration vì DOM có thể stale
-            List<WebElement> buttons = driver.findElements(ADD_TO_CART_BUTTONS);
-            buttons.get(i).click();
-
-            if (i < addButtons.size() - 1) {
-                // Không phải sản phẩm cuối → Continue Shopping
-                click(CONTINUE_SHOPPING_BTN);
-            }
-        }
-
-        // Sau sản phẩm cuối → View Cart
-        return clickViewCartFromModal();
+        return new com.automationexercise.components.AddToCartModal(driver).waitForModal();
     }
 
     // -----------------------------------------------------------------
@@ -300,7 +286,7 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickWomenCategory() {
         log.info("Clicking Women category");
-        jsClick(CATEGORY_WOMEN);
+        click(CATEGORY_WOMEN);
         return this;
     }
 
@@ -310,7 +296,7 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickFirstWomenSubcategory() {
         log.info("Clicking first Women subcategory");
-        jsClick(FIRST_WOMEN_SUBCATEGORY);
+        click(FIRST_WOMEN_SUBCATEGORY);
         return this;
     }
 
@@ -319,7 +305,7 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickMenCategory() {
         log.info("Clicking Men category");
-        jsClick(CATEGORY_MEN);
+        click(CATEGORY_MEN);
         return this;
     }
 
@@ -328,7 +314,7 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickFirstMenSubcategory() {
         log.info("Clicking first Men subcategory");
-        jsClick(FIRST_MEN_SUBCATEGORY);
+        click(FIRST_MEN_SUBCATEGORY);
         return this;
     }
 
@@ -337,32 +323,48 @@ public class ProductsPage extends AEBasePage {
     // -----------------------------------------------------------------
 
     /**
-     * Click brand đầu tiên trong sidebar.
-     * Returns this vì page reload với brand products.
+     * Returns the brand name at the given 1-based index in the sidebar, normalized.
+     * Raw text may appear as "(6) Polo" — this strips the count prefix.
+     *
+     * @param oneBasedIndex 1-based index of the brand link
+     * @return normalized brand name, e.g. "Polo"
      */
-    public ProductsPage clickFirstBrand() {
-        List<WebElement> brands = driver.findElements(BRAND_LINKS);
-        if (brands.isEmpty()) {
-            throw new RuntimeException("No brand links found in sidebar");
-        }
-        String brandName = brands.get(0).getText();
-        log.info("Clicking first brand: '{}'", brandName);
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", brands.get(0));
+    public String getBrandNameAt(int oneBasedIndex) {
+        By locator = By.xpath("(//div[contains(@class,'brands-name')]//li/a)[" + oneBasedIndex + "]");
+        String raw = getText(locator);
+        return raw.replaceFirst("^\\s*\\(\\d+\\)\\s*", "").trim();
+    }
+
+    /**
+     * Clicks the brand at the given 1-based index in the sidebar.
+     * Returns this (ProductsPage) because the page reloads with brand products.
+     *
+     * @param oneBasedIndex 1-based index of the brand link
+     * @return this ProductsPage with brand products loaded
+     */
+    public ProductsPage clickBrandAt(int oneBasedIndex) {
+        By locator = By.xpath("(//div[contains(@class,'brands-name')]//li/a)[" + oneBasedIndex + "]");
+        String brandName = getBrandNameAt(oneBasedIndex);
+        log.info("Clicking brand #{}: '{}'", oneBasedIndex, brandName);
+        click(locator);
         return this;
     }
 
     /**
-     * Click brand thứ hai trong sidebar.
-     * Returns this vì page reload với brand products.
+     * Click brand đầu tiên trong sidebar.
+     * @deprecated Use {@link #clickBrandAt(int)} for explicit index control.
      */
+    @Deprecated
+    public ProductsPage clickFirstBrand() {
+        return clickBrandAt(1);
+    }
+
+    /**
+     * Click brand thứ hai trong sidebar.
+     * @deprecated Use {@link #clickBrandAt(int)} for explicit index control.
+     */
+    @Deprecated
     public ProductsPage clickSecondBrand() {
-        List<WebElement> brands = driver.findElements(BRAND_LINKS);
-        if (brands.size() < 2) {
-            throw new RuntimeException("Less than 2 brand links found in sidebar");
-        }
-        String brandName = brands.get(1).getText();
-        log.info("Clicking second brand: '{}'", brandName);
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", brands.get(1));
-        return this;
+        return clickBrandAt(2);
     }
 }
