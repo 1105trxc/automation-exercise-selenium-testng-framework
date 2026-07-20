@@ -95,10 +95,28 @@ public abstract class BaseTest {
      * CRITICAL: Phải luôn chạy để tránh browser process leak.
      */
     @AfterMethod(alwaysRun = true)
-    public void tearDown() {
-        log.info("TEST TEARDOWN: Closing browser");
-        DriverFactory.quitDriver();
-        log.info("══════════════════════════════════════════════");
+    public void tearDown(org.testng.ITestResult result) {
+        if (result.getStatus() == org.testng.ITestResult.FAILURE) {
+            log.error("Test FAILED: {}", result.getName());
+        } else if (result.getStatus() == org.testng.ITestResult.SUCCESS) {
+            log.info("Test PASSED: {}", result.getName());
+        } else {
+            log.info("Test SKIPPED: {}", result.getName());
+        }
+
+        try {
+            com.automationexercise.utils.AccountCleanupService.CleanupResult cleanup =
+                    com.automationexercise.utils.AccountCleanupService.cleanupCurrentTestAccounts();
+
+            if (!cleanup.isFullySuccessful()) {
+                log.warn("Unresolved account cleanup for test '{}': {}",
+                        result.getName(), cleanup.failedEmails());
+            }
+        } finally {
+            log.info("TEST TEARDOWN: Closing browser");
+            DriverFactory.quitDriver();
+            log.info("══════════════════════════════════════════════");
+        }
     }
 
     /**

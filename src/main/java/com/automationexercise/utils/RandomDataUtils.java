@@ -41,7 +41,8 @@ public final class RandomDataUtils {
      */
     public static String generateUniqueEmail() {
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMAT);
-        return "ae.test." + timestamp + "@example.com";
+        String uuid = java.util.UUID.randomUUID().toString().substring(0, 6);
+        return "ae.test." + timestamp + "." + uuid + "@example.com";
     }
 
     /**
@@ -52,7 +53,8 @@ public final class RandomDataUtils {
      */
     public static String generateName() {
         String timeSuffix = LocalDateTime.now().format(TIME_FORMAT);
-        return "TestUser" + timeSuffix;
+        String uuid = java.util.UUID.randomUUID().toString().substring(0, 4);
+        return "TestUser" + timeSuffix + uuid;
     }
 
     /**

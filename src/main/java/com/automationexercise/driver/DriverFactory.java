@@ -106,7 +106,7 @@ public final class DriverFactory {
         try {
             driver.quit();
             log.info("Driver closed successfully.");
-        } catch (Exception e) {
+        } catch (org.openqa.selenium.WebDriverException e) {
             log.warn("Exception while quitting driver (will still remove from ThreadLocal): {}", e.getMessage());
         } finally {
             driverThreadLocal.remove();
@@ -140,6 +140,14 @@ public final class DriverFactory {
         prefs.put("autofill.credit_card_enabled", false);   // Disable card autofill
         prefs.put("credentials_enable_service", false);     // Disable password manager
         prefs.put("profile.password_manager_enabled", false); // Disable save password
+
+        // Setup download directory for TC-AE-024
+        String downloadDir = System.getProperty("user.dir") + java.io.File.separator + "target" + java.io.File.separator + "downloads";
+        prefs.put("download.default_directory", downloadDir);
+        prefs.put("download.prompt_for_download", false);
+        prefs.put("download.directory_upgrade", true);
+        prefs.put("safebrowsing.enabled", true);
+
         options.setExperimentalOption("prefs", prefs);
 
         options.addArguments("--disable-popup-blocking");   // Don't block popups from page
