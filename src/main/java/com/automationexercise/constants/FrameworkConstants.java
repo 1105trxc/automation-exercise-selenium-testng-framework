@@ -15,8 +15,6 @@ public final class FrameworkConstants {
     // Timeouts (seconds)
     // -------------------------------------------------
 
-    /** Default explicit wait for element visibility/clickability */
-    public static final int EXPLICIT_WAIT_SECONDS = 15;
 
     /** Maximum time to wait for a page to load */
     public static final int PAGE_LOAD_TIMEOUT_SECONDS = 30;

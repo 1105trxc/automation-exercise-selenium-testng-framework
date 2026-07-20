@@ -1,463 +1,206 @@
-# Phase 3 – Remaining 18 Test Cases (TC-009 to TC-026)
+# Kế Hoạch Sửa Code Theo HUONG_DAN_SUA_CODE_AUTOMATION_FRAMEWORK_HOAN_CHINH.md
 
-## Background
+## Tóm tắt vấn đề
 
-Phase 2 hoàn thành 8 test cases (TC-001 đến TC-008). Phase 3 implement toàn bộ 18 test cases còn lại, bao gồm Cart, Checkout, Search, Category/Brand, Subscription, Scroll.
+Sau đợt Refactor & Hardening trước, code đã đi lệch khỏi các nguyên tắc kiến trúc quan trọng. Tài liệu hướng dẫn yêu cầu sửa 10 nhóm vấn đề (P0-FIX-00 → P0-FIX-10) theo thứ tự nghiêm ngặt.
+
+---
+
+## Tiến Độ Triển Khai Thực Tế (Progress Status)
+
+### ✅ ĐÃ HOÀN THÀNH:
+
+1. **P0-FIX-00: Baseline & Guardrails**
+   - Đã quét static analysis và kiểm tra compile.
+
+2. **P0-FIX-01: Sửa Add-to-cart đúng root cause**
+   - `AddToCartModal.java`: Sửa `clickContinueShopping()` để wait cho modal hoàn toàn `invisibilityOfElementLocated` trước khi return `ProductsPage`. Bỏ `Thread.sleep(500)`.
+   - `ProductsPage.java`: Xóa `addAllSearchedProductsToCart()` (chứa retry 3 lần, JS click, `$('#cartModal').modal('hide')`). Thêm `addSearchedProductAt(int)` để thực hiện đơn thao tác chuẩn (scroll -> hover -> native click).
+   - `CartFlow.java`: Thêm `addAllVisibleSearchedProducts(ProductsPage)` chuyển trách nhiệm lặp và điều phối flow về đúng lớp Flow.
+   - `ProductSearchTest.java`: Cập nhật TC-AE-020 sử dụng `CartFlow`.
+
+3. **P0-FIX-02: Thu hẹp AdHandler & AEBasePage.click()**
+   - `AEBasePage.java`: Xóa post-click URL check `#google_vignette` và re-click tự động sau khi click thành công (tránh double submit). Đặt hợp đồng click rõ ràng: chỉ retry 1 lần DUY NHẤT khi catch `ElementClickInterceptedException` đến từ 3rd-party ad đã được chứng minh.
+   - `AdHandler.java`: Xóa `querySelectorAll('div')` quét toàn DOM, xóa reset style `html/body`. Thu hẹp selector chỉ nhắm đến iframe Google Ad (`aswift_`, `google_ads_`, `adsbygoogle`). Xóa dead code (`IFRAME_DETECT_TIMEOUT`, `isFullScreenAdPresent()`, `waitForFullScreenAdGone()`).
+
+4. **P0-FIX-03: Account Cleanup Service per-test/thread-safe**
+   - `AccountCleanupService.java`: Chuyển registry sang `ThreadLocal<Map<String, String>>` đảm bảo mỗi thread test hoàn toàn độc lập (parallel-safe).
+   - Đã tạo record `CleanupResult(int attempted, List<String> failedEmails)`.
+   - Cập nhật `deleteAccountViaApi()` parse JSON chính xác (`responseCode == 200` và `message` chứa "deleted"). Bắt cụ thể `IOException` và restore interrupt cho `InterruptedException`. Base URL lấy từ `ConfigManager`.
+   - `BaseTest.java`: Cập nhật `tearDown()` sử dụng `AccountCleanupService.cleanupCurrentTestAccounts()`.
+
+5. **P0-FIX-04: Xóa Thread.sleep & Sửa DownloadManager**
+   - `DownloadManager.java`: Xóa bỏ toàn bộ `Thread.sleep()`. Thay thế bằng Selenium `FluentWait` polling 250ms kiểm tra file tồn tại, non-empty, không còn file tạm `.crdownload` và size ổn định qua 2 lần poll.
+   - Thư mục download lấy từ `ConfigManager` (`downloadDir`), dùng NIO `Files.readString(..., StandardCharsets.UTF_8)` đọc file. `cleanDownloadDirectory()` throw `IllegalStateException` nếu không xóa được file rác.
+
+6. **P0-FIX-05: Truthful Page Object transitions**
+   - Đã tạo mới 3 Page Objects phản ánh đúng trạng thái thực tế:
+     - `AccountCreatedPage.java` (`/account_created`)
+     - `AccountDeletedPage.java` (`/delete_account`)
+     - `TestCasesPage.java` (`/test_cases`)
+   - `SignupPage.java`: `clickCreateAccount()` trả về `AccountCreatedPage` (thay vì `SignupPage`). Xóa `clickContinue()` khỏi `SignupPage` vì nút này thuộc `AccountCreatedPage`.
+   - `HeaderComponent.java`: `clickDeleteAccount()` trả về `AccountDeletedPage`, `clickTestCases()` trả về `TestCasesPage`.
+   - `UserFlow.java`: `registerNewUser()` fail-fast, tự động register cleanup trước khi click submit, trả về `AccountCreatedPage`. Thêm `loginSuccessfully()` cho positive flow và `submitInvalidLogin()` cho negative test.
+   - `HomePage.java`: Xóa `ACCOUNT_DELETED_MSG` và `isAccountDeletedMessageVisible()` (đã chuyển về `AccountDeletedPage`).
+   - `RegistrationTest.java` & `ProductSearchTest.java`: Cập nhật toàn bộ callers sang đúng Page Objects mới.
+
+7. **P0-FIX-06: Hoàn thiện Assertions (Một phần)**
+   - `CartPage.java`: Tạo record `CartItemSnapshot(name, unitPrice, quantity, total)` và method `getCartItems()` trả về danh sách snapshot.
+   - `ProductSearchTest.java`: TC-AE-020 sử dụng `getCartItems()` so sánh chính xác danh sách sản phẩm trước và sau khi đăng nhập (không chỉ so sánh `getProductCount()`).
+   - `ProductsPage.java`: Thêm `getBrandNameAt(int)` và `clickBrandAt(int)` chuẩn hóa tên brand (xóa tiền tố `(6)`).
+
+---
+
+### ⏳ ĐANG TIẾP TỤC THỰC HIỆN:
+- **P0-FIX-06 (tiếp theo)**: Sửa `HomePage.isHeroTextVisible()` kiểm tra đầy đủ `display`, `visibility`, `opacity`, `width/height` và viewport boundary.
+- **P0-FIX-07**: Audit exception handling và dead code còn lại.
+- **P0-FIX-08**: Audit & document config options.
+- **P0-FIX-09**: Dọn dẹp comment thừa.
+- **P0-FIX-10**: Thực thi Smoke & Regression 3 lần liên tiếp để thu thập bằng chứng PASS.
+
+---
+
+## Phát hiện: Những gì cần sửa (Anti-patterns hiện tại)
+
+### BLOCKER — Vi phạm nguyên tắc kiến trúc nghiêm trọng
+
+| # | File | Vấn đề |
+|---|------|--------|
+| 1 | `ProductsPage.addAllSearchedProductsToCart()` | Có `Thread.sleep(500)`, `JavascriptExecutor.click()`, retry loop 3 lần, `$('#cartModal').modal('hide')` — tất cả đều BỊ CẤM |
+| 2 | `AEBasePage.click()` | Post-click URL check dẫn đến re-click tự động sau click thành công — có thể submit action 2 lần |
+| 3 | `AdHandler` `HIDE_FULLSCREEN_IFRAME_JS_SCRIPT` | `querySelectorAll('div')` quét toàn bộ DOM, ẩn mọi fixed div z-index cao — có thể ẩn app modal |
+| 4 | `AdHandler.navigateToCleanUrl()` | Reset `html/body` style rộng (`overflow`, `height`, `width`) — thay đổi layout trang không có evidence |
+| 5 | `AccountCleanupService` | Global `ConcurrentHashMap` — cleanup global xóa account của test khác khi parallel |
+| 6 | `AccountCleanupService.deleteAccountViaApi()` | `catch(Exception)` nuốt mọi lỗi, check `response.body().contains("200")` quá yếu |
+| 7 | `DownloadManager.waitForDownload()` | `Thread.sleep(1000)` + `Thread.sleep(500)`, `file.delete()` không kiểm tra kết quả |
+| 8 | `UserFlow.registerNewUser()` | Kiểm tra URL rồi silently fail, trả về `SignupPage` ngay cả khi tạo account thất bại |
+| 9 | `HeaderComponent.clickDeleteAccount()` | Return `new HomePage(driver)` là sai semantics — thực tế đang ở `AccountDeletedPage` |
+| 10 | `HeaderComponent.clickTestCases()` | Return `new HomePage(driver)` là sai — thực tế đang ở `TestCasesPage` |
+| 11 | `SignupPage.clickCreateAccount()` | Return `SignupPage` là sai — thực tế đang ở `AccountCreatedPage` |
+| 12 | `BaseTest.tearDown()` | Gọi `cleanupAllRegisteredAccounts()` global thay vì per-test |
+| 13 | `HomePage` | Chứa `ACCOUNT_DELETED_MSG` và `isAccountDeletedMessageVisible()` — không nên có ở đây |
+| 14 | `AddToCartModal.clickContinueShopping()` | Không chờ modal biến mất trước khi return |
+
+### MAJOR — Cần sửa nhưng không phá vỡ ngay
+
+| # | File | Vấn đề |
+|---|------|--------|
+| 15 | `ProductsPage` | Không có `addSearchedProductAt(int)` — Page orchestrate toàn bộ flow thay vì `CartFlow` |
+| 16 | `CartFlow` | Không có `addAllVisibleSearchedProducts()` — thiếu Flow orchestration |
+| 17 | `AccountCleanupService` | URL hard-code `https://automationexercise.com` thay vì lấy từ `ConfigManager` |
+| 18 | `DownloadManager` | Path `target/downloads` hard-code, không lấy từ config; `readFileContent` dùng default charset |
+| 19 | `AdHandler.HIDE_FULLSCREEN_IFRAME_JS` | Dead code — `HIDE_FULLSCREEN_IFRAME_JS` (cái cũ) vs `HIDE_FULLSCREEN_IFRAME_JS_SCRIPT` (cái mới) |
+| 20 | `AdHandler.isFullScreenAdPresent()` | Dead code — luôn trả về `false` |
+| 21 | `AdHandler.waitForFullScreenAdGone()` | Dead code — không có caller thực |
+| 22 | `ProductSearchTest.searchAndVerifyCartAfterLogin()` | Assert `cartPage.getProductCount()` — false PASS nếu sản phẩm đúng số nhưng sai tên |
+| 23 | `HomPage.isHeroTextVisible()` | JS chỉ check `rect.top` — thiếu check `display`, `visibility`, `opacity`, `width/height` |
+
+---
+
+## Những gì KHÔNG sửa (đang tốt)
+
+- `ConfigManager` cho phép CLI override
+- `RandomDataUtils` dùng UUID
+- Cart math assertion (Price × Quantity = Total)
+- Exact username assertion
+- `DriverFactory` dùng `ThreadLocal`
+- `HeaderComponent.getLoggedInUsername()` — đúng
+- Scroll mechanism `waitForScrollToTop()` — đúng về approach
+
+---
+
+## Thứ tự triển khai
+
+### P0-FIX-00: Baseline
+- Chạy smoke + regression để ghi nhận baseline hiện tại
+
+### P0-FIX-01: Add-to-cart (Xóa retry/JS/force-hide)
+**Files sửa:**
+- `ProductsPage.java` — thêm `addSearchedProductAt(int)`, xóa `addAllSearchedProductsToCart()`
+- `CartFlow.java` — thêm `addAllVisibleSearchedProducts(ProductsPage)`
+- `AddToCartModal.java` — `clickContinueShopping()` phải chờ modal invisible
+
+**Files gọi sửa theo:**
+- `ProductSearchTest.java` — dùng `CartFlow.addAllVisibleSearchedProducts()`
+
+### P0-FIX-02: AdHandler thu hẹp + AEBasePage.click() sửa
+**Files sửa:**
+- `AEBasePage.java` — xóa post-click URL check và re-click tự động
+- `AdHandler.java` — xóa `querySelectorAll('div')`, xóa html/body style reset, xóa dead code
+
+### P0-FIX-03: AccountCleanupService per-thread
+**Files sửa:**
+- `AccountCleanupService.java` — ThreadLocal, proper exception handling, JSON parse
+- `UserFlow.java` — `registerNewUser()` tự register cleanup, fail-fast, trả về `AccountCreatedPage`
+- `BaseTest.java` — dùng `cleanupCurrentTestAccounts()`
+
+### P0-FIX-04: Xóa Thread.sleep, sửa DownloadManager
+**Files sửa:**
+- `DownloadManager.java` — FluentWait thay Thread.sleep, NIO, config-driven path, UTF-8
+
+### P0-FIX-05: Truthful Page Object transitions
+**Files tạo mới:**
+- `AccountCreatedPage.java` — [NEW]
+- `AccountDeletedPage.java` — [NEW]
+- `TestCasesPage.java` — [NEW]
+
+**Files sửa:**
+- `SignupPage.java` — `clickCreateAccount()` trả về `AccountCreatedPage`
+- `HeaderComponent.java` — `clickDeleteAccount()` trả về `AccountDeletedPage`, `clickTestCases()` trả về `TestCasesPage`
+- `UserFlow.java` — `loginSuccessfully()` thay vì `login()`
+- `HomePage.java` — xóa `ACCOUNT_DELETED_MSG` và `isAccountDeletedMessageVisible()`
+
+**Files gọi sửa theo:**
+- Tất cả test callers của `clickDeleteAccount()`, `clickTestCases()`, `clickCreateAccount()`
+
+### P0-FIX-06: Strengthened assertions
+**Files sửa:**
+- `HomePage.java` — `isHeroTextVisible()` full viewport check
+- `ProductsPage.java` — `getBrandNameAt(int)`, `clickBrandAt(int)`
+- `CartPage.java` — `getCartItems()` trả về `List<CartItemSnapshot>`
+- Tests update để dùng `CartItemSnapshot` comparison
+
+### P0-FIX-07: Exception handling + dead code
+**Files sửa:**
+- `AdHandler.java` — xóa dead code đã confirm
+- `AEBasePage.java` — xóa `catch(Exception ignored)`
+
+### P0-FIX-08: Config + Browser consistency
+- Document rõ browser constraint cho download test
+
+### P0-FIX-09: Comment cleanup
+- Xóa redundant step-by-step comments
+
+### P0-FIX-10: Chạy regression 3 lần, ghi evidence
 
 ---
 
 ## Open Questions
 
 > [!IMPORTANT]
-> **TC-018 – Step 6 có typo trong test case gốc:**
-> Text ghi là `"WOMEN - TOPS PRODUCTS"` nhưng step 5 bảo click "Dress".
-> → Thực tế website: click Women → click Tops → heading là `"WOMEN - TOPS PRODUCTS"`.
-> **Đề xuất:** Implement đúng theo flow thực tế (Women → Tops), ignore typo.
+> **Câu hỏi 1**: Một số test dùng `signupPage.clickContinue()` thay vì `signupPage.clickCreateAccount()` → `accountCreatedPage.clickContinue()`. Khi tách `AccountCreatedPage`, cần review tất cả callers.
 
 > [!IMPORTANT]
-> **TC-024 – Verify download invoice:**
-> "Download Invoice" chỉ verify nút tồn tại và có thể click được (không verify file thực sự tải về, vì điều đó phụ thuộc vào browser profile/OS – nằm ngoài scope UI automation).
+> **Câu hỏi 2**: Tài liệu yêu cầu `UserFlow.loginSuccessfully()` nhưng negative tests hiện tại vẫn dùng `UserFlow.login()`. Tôi sẽ **giữ `login()` method cũ** cho negative tests và thêm `loginSuccessfully()` cho positive flow — tránh break existing tests.
 
-> [!NOTE]
-> **Shared helper pattern:**
-> TC-014, 015, 016, 023, 024 đều cần bước "Add products to cart" (add sản phẩm từ ProductsPage).
-> Sẽ tạo **private helper method** `addFirstProductToCart()` trong mỗi test class cần nó – không tạo base class mới để tránh over-engineering.
+> [!WARNING]
+> **Câu hỏi 3**: `ProductSearchTest.searchAndVerifyCartAfterLogin()` hiện assert bằng `getProductCount()`. Tài liệu yêu cầu dùng `CartItemSnapshot`. Tuy nhiên điều này sẽ yêu cầu sửa cả `CartPage` và test. Tôi sẽ implement `CartItemSnapshot` và `getCartItems()` nhưng cần test thực tế để xác nhận locators.
 
----
-
-## Proposed Changes
-
-### Nhóm 1 – Page Objects Mới
-
----
-
-#### [NEW] CartPage.java
-
-**Path:** `src/main/java/com/automationexercise/pages/CartPage.java`
-
-**Dùng cho:** TC-011, 012, 013, 014, 015, 016, 017, 020, 022, 023, 024
-
-**Methods:**
-```
-isCartPageVisible()                → verify "Shopping Cart" heading
-isCartEmpty()                      → check tbody row count == 0
-getProductCount()                  → số lượng row trong cart
-getProductNameAtRow(int)           → tên sản phẩm theo row
-getProductPriceAtRow(int)          → giá theo row
-getProductQuantityAtRow(int)       → số lượng theo row
-getProductTotalAtRow(int)          → tổng tiền theo row
-isProductInCart(String productName)→ tìm theo tên sản phẩm
-removeProductAtRow(int)            → click nút X
-clickProceedToCheckout()           → return CheckoutPage HOẶC LoginPage
-                                     (nếu chưa login sẽ có modal "Register/Login")
-clickViewCartModal()               → click "View Cart" từ modal sau Add to Cart
-clickContinueShopping()            → click "Continue Shopping" từ modal
-isSubscriptionVisible()            → verify "SUBSCRIPTION" text ở footer
-enterSubscriptionEmail(String)     → type email vào subscription form
-clickSubscribeButton()             → click arrow button
-isSubscribeSuccessVisible()        → verify success message
-```
-
-**Locator strategy:**
-- Cart table rows: `By.cssSelector("tbody tr")`
-- Remove button: `By.cssSelector("a.cart_quantity_delete")`
-- Proceed to Checkout: `By.cssSelector(".btn.btn-default.check_out")`
-- "Register/Login" link in modal: `By.xpath("//div[@id='checkoutModal']//a[contains(text(),'Register')]")`
-
----
-
-#### [NEW] CheckoutPage.java
-
-**Path:** `src/main/java/com/automationexercise/pages/CheckoutPage.java`
-
-**Dùng cho:** TC-014, 015, 016, 023, 024
-
-**Methods:**
-```
-isDeliveryAddressVisible()         → verify delivery address section
-isBillingAddressVisible()          → verify billing address section
-getDeliveryFullName()              → lấy tên đầy đủ của delivery address
-getDeliveryAddress()               → lấy địa chỉ delivery
-getBillingFullName()               → lấy tên đầy đủ billing
-getBillingAddress()                → lấy địa chỉ billing
-enterOrderComment(String)          → type vào comment textarea
-clickPlaceOrder()                  → return PaymentPage
-```
-
-**Locator strategy:**
-- Delivery address block: `By.id("address_delivery")`
-- Billing address block: `By.id("address_invoice")`
-- Comment textarea: `By.cssSelector("textarea.form-control")` hoặc `By.name("message")`
-- Place Order button: `By.cssSelector(".btn.btn-default.check_out")`
-
----
-
-#### [NEW] PaymentPage.java
-
-**Path:** `src/main/java/com/automationexercise/pages/PaymentPage.java`
-
-**Dùng cho:** TC-014, 015, 016, 024
-
-**Methods:**
-```
-enterCardName(String)             → name on card
-enterCardNumber(String)           → card number
-enterCVC(String)                  → CVC/CVV
-enterExpiryMonth(String)          → MM
-enterExpiryYear(String)           → YYYY
-clickPayAndConfirm()              → return PaymentSuccessPage
-```
-
-**Locator strategy:**
-- `input[data-qa='name-on-card']`
-- `input[data-qa='card-number']`
-- `input[data-qa='cvc']`
-- `input[data-qa='expiry-month']`
-- `input[data-qa='expiry-year']`
-- `button[data-qa='pay-button']`
-
----
-
-#### [NEW] PaymentSuccessPage.java
-
-**Path:** `src/main/java/com/automationexercise/pages/PaymentSuccessPage.java`
-
-**Dùng cho:** TC-014, 015, 016, 024
-
-**Methods:**
-```
-isOrderPlacedSuccessfully()       → verify "Your order has been placed successfully!"
-clickDownloadInvoice()            → click download button (TC-024)
-clickContinue()                   → return HomePage
-```
-
-**Locator strategy:**
-- Success message: `By.xpath("//h2[@data-qa='order-placed']")` hoặc `//p[contains(text(),'placed successfully')]`
-- Download Invoice: `By.xpath("//a[contains(text(),'Download Invoice')]")`
-- Continue: `By.cssSelector("a[data-qa='continue-button']")`
-
----
-
-### Nhóm 2 – Update Page Objects Hiện Có
-
----
-
-#### [MODIFY] ProductsPage.java
-
-Thêm methods cho:
-- TC-012: Hover over product → Add to Cart → Continue Shopping / View Cart modal
-- TC-018: Category sidebar (Women, Men, subcategories)
-- TC-019: Brand sidebar
-- TC-020: searchFor() đã có, cần thêm addAllSearchedProductsToCart()
-
-**Locators mới cần thêm:**
-```java
-// Hover card
-private static final By FIRST_PRODUCT_CARD    = By.cssSelector(".productinfo.text-center");
-private static final By FIRST_ADD_TO_CART     = By.xpath("(//a[@class='btn btn-default add-to-cart'])[1]");
-private static final By SECOND_ADD_TO_CART    = By.xpath("(//a[@class='btn btn-default add-to-cart'])[2]");
-
-// Modal after Add to Cart
-private static final By CONTINUE_SHOPPING_BTN = By.cssSelector(".btn-success.close-modal");
-private static final By VIEW_CART_BTN         = By.cssSelector("a[href='/view_cart']");
-
-// Category sidebar
-private static final By CATEGORY_WOMEN        = By.xpath("//a[@href='#Women']");
-private static final By CATEGORY_WOMEN_TOPS   = By.xpath("//div[@id='Women']//a[contains(@href,'/category_products/')]");
-private static final By CATEGORY_MEN          = By.xpath("//a[@href='#Men']");
-private static final By CATEGORY_MEN_TSHIRTS  = By.xpath("//div[@id='Men']//a[contains(@href,'/category_products/')]");
-private static final By CATEGORY_PAGE_HEADING = By.cssSelector(".title.text-center");
-
-// Brand sidebar (in ProductsPage)
-private static final By FIRST_BRAND_LINK      = By.xpath("(//div[@class='brands-name']//a)[1]");
-private static final By SECOND_BRAND_LINK     = By.xpath("(//div[@class='brands-name']//a)[2]");
-private static final By BRANDS_SECTION        = By.cssSelector(".brands_products");
-private static final By BRAND_PAGE_HEADING    = By.cssSelector(".title.text-center");
-
-// Searched products list
-private static final By SEARCHED_PRODUCT_ADD_TO_CART_BUTTONS =
-    By.xpath("//a[@class='btn btn-default add-to-cart']");
-```
-
-**Methods mới:**
-```java
-hoverAndAddFirstProductToCart() → click Add to Cart sau hover
-clickContinueShopping()         → đóng modal, ở lại ProductsPage
-hoverAndAddSecondProductToCart()→ click Add to Cart sản phẩm thứ 2
-clickViewCart()                 → return CartPage
-isCategoryWomenVisible()        → verify category sidebar
-clickWomenCategory()            → expand Women accordion
-clickFirstWomenSubcategory()    → click Tops (or first link)
-getCategoryPageHeading()        → get visible heading text
-clickMenCategory()              → expand Men accordion
-clickFirstMenSubcategory()
-isBrandsSectionVisible()        → verify brand sidebar
-clickFirstBrand()               → return ProductsPage (reload for brand)
-getBrandPageHeading()           → get heading after brand click
-clickSecondBrand()
-addAllSearchedProductsToCart()  → click Add to Cart trên tất cả kết quả search
-```
-
----
-
-#### [MODIFY] ProductDetailPage.java
-
-Thêm methods cho TC-013 (set quantity, add to cart):
-
-```java
-// Locators mới
-private static final By QUANTITY_INPUT = By.id("quantity");
-private static final By ADD_TO_CART_BTN = By.cssSelector(".cart .btn");
-private static final By VIEW_CART_LINK = By.cssSelector("a[href='/view_cart']");
-
-// Methods mới
-setQuantity(int quantity)        → clear field, type new value
-clickAddToCart()                 → click "Add to cart" button
-clickViewCart()                  → return CartPage
-```
-
----
-
-#### [MODIFY] HomePage.java
-
-Thêm methods cho TC-010, 022, 025, 026:
-
-```java
-// Locators mới
-private static final By CART_LINK              = By.cssSelector("a[href='/view_cart']");
-private static final By SUBSCRIPTION_HEADING   = By.xpath("//h2[normalize-space()='Subscription']");
-private static final By SUBSCRIBE_EMAIL_INPUT  = By.id("susbscribe_email");
-private static final By SUBSCRIBE_BUTTON       = By.id("subscribe");
-private static final By SUBSCRIBE_SUCCESS_MSG  = By.cssSelector("div.alert-success");
-private static final By RECOMMENDED_ITEMS      = By.cssSelector("#recommended-item-carousel");
-private static final By FIRST_RECOMMENDED_ADD  = By.xpath("(//div[@id='recommended-item-carousel']//a[@class='btn btn-default add-to-cart'])[1]");
-private static final By VIEW_CART_MODAL        = By.cssSelector("a[href='/view_cart']");
-private static final By SCROLL_UP_BUTTON       = By.id("scrollUp");
-private static final By HERO_TEXT              = By.xpath("//div[@class='item active']//h2");
-
-// Methods mới
-clickCart()                        → return CartPage
-scrollToFooter()                   → scrollToBottom()
-isSubscriptionHeadingVisible()     → verify "SUBSCRIPTION"
-enterSubscriptionEmail(String)     → type email
-clickSubscribeButton()             → click arrow
-isSubscribeSuccessVisible()        → verify success message
-isRecommendedItemsVisible()        → verify section
-clickAddFirstRecommendedToCart()   → click Add to Cart
-clickViewCartFromModal()           → return CartPage
-clickScrollUpButton()              → click arrow button
-isHeroTextVisible()                → verify top hero text
-scrollUpWithKeyboard()             → sendKeys PAGE_UP on body
-```
-
----
-
-### Nhóm 3 – Model Classes Mới
-
----
-
-#### [NEW] PaymentData.java
-
-**Path:** `src/main/java/com/automationexercise/models/PaymentData.java`
-
-```java
-// Fields từ checkout.json
-private String nameOnCard;   // "Test Card"
-private String cardNumber;   // "4111111111111111"
-private String cvc;          // "123"
-private String expiryMonth;  // "12"
-private String expiryYear;   // "2027"
-private String orderComment; // "Test order comment"
-```
-
----
-
-### Nhóm 4 – Test Data Files Mới
-
----
-
-#### [NEW] checkout.json
-
-```json
-{
-  "paymentData": [
-    {
-      "nameOnCard": "Test Automation",
-      "cardNumber": "4111111111111111",
-      "cvc": "123",
-      "expiryMonth": "12",
-      "expiryYear": "2027",
-      "orderComment": "Automated test order. Please ignore."
-    }
-  ]
-}
-```
-
----
-
-#### [MODIFY] users.json
-
-Không thêm field mới vào users.json vì `UserData` đã đủ địa chỉ cho TC-023.
-(TC-023 dùng lại `UserData.getAddress()` để verify trên CheckoutPage.)
-
----
-
-### Nhóm 5 – Test Classes Mới
-
----
-
-#### [NEW] ProductSearchTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/products/ProductSearchTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-009 | `searchProductByKeyword()` | Search "Blue Top", verify SEARCHED PRODUCTS heading + results visible |
-| TC-AE-020 | `searchAndVerifyCartAfterLogin()` | Add searched products → view cart → login → verify cart preserved |
-
----
-
-#### [NEW] SubscriptionTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/subscription/SubscriptionTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-010 | `verifySubscriptionOnHomePage()` | Scroll to footer, enter email, verify success |
-| TC-AE-011 | `verifySubscriptionOnCartPage()` | Navigate to cart, scroll, enter email, verify success |
-
----
-
-#### [NEW] CartTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/cart/CartTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-012 | `addTwoProductsAndVerifyCart()` | Hover add × 2, verify prices/qty/total |
-| TC-AE-013 | `verifyProductQuantityInCart()` | Set qty=4 from detail page, verify in cart |
-| TC-AE-017 | `removeProductFromCart()` | Add 1 product, click X, verify cart empty |
-| TC-AE-022 | `addRecommendedItemToCart()` | Scroll to recommended section, add, view cart |
-
----
-
-#### [NEW] CheckoutTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/checkout/CheckoutTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-014 | `placeOrderRegisterWhileCheckout()` | Add to cart → checkout → register via modal → back to cart → checkout → pay → delete |
-| TC-AE-015 | `placeOrderRegisterBeforeCheckout()` | Register → add to cart → checkout → pay → delete |
-| TC-AE-016 | `placeOrderLoginBeforeCheckout()` | Register/login → add to cart → checkout → pay → delete |
-| TC-AE-023 | `verifyAddressDetailsInCheckout()` | Register (save address data) → add to cart → checkout → verify address matches → delete |
-| TC-AE-024 | `downloadInvoiceAfterOrder()` | Full order flow → verify success → click Download Invoice → continue → delete |
-
----
-
-#### [NEW] CategoryBrandTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/products/CategoryBrandTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-018 | `viewCategoryProducts()` | Home → Women → Tops → verify heading → Men → Tshirts → verify heading |
-| TC-AE-019 | `viewBrandProducts()` | Products → click Brand 1 → verify heading → click Brand 2 → verify heading |
-
----
-
-#### [NEW] ReviewTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/products/ReviewTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-021 | `addReviewOnProduct()` | Products → View Product → enter name/email/review → Submit → verify "Thank you" |
-
----
-
-#### [NEW] ScrollTest.java
-
-**Path:** `src/test/java/com/automationexercise/tests/scroll/ScrollTest.java`
-
-| TC | Method | Notes |
-|---|---|---|
-| TC-AE-025 | `scrollUpUsingArrowButton()` | Scroll down → verify "SUBSCRIPTION" → click scroll-up arrow → verify hero text |
-| TC-AE-026 | `scrollUpWithoutArrowButton()` | Scroll down → verify "SUBSCRIPTION" → sendKeys PAGE_UP → verify hero text |
-
----
-
-### Nhóm 6 – TestNG Suite Files
-
----
-
-#### [MODIFY] smoke.xml
-
-Thêm test classes mới vào smoke suite:
-- `CartTest` (groups="smoke")
-- `CheckoutTest` (groups="smoke" – chỉ TC-014)
-
-#### [MODIFY] regression.xml
-
-Thêm toàn bộ test classes mới.
-
----
-
-## Architecture Decisions
-
-### 1. Tại sao `PaymentSuccessPage` là page riêng thay vì method trong CheckoutPage?
-
-Sau khi pay, URL thay đổi thành `/payment_done` và nội dung trang hoàn toàn khác.
-Cần page riêng để thể hiện đúng trạng thái navigation.
-
-### 2. TC-023 verify address như thế nào?
-
-`UserData` đã có field `firstName`, `lastName`, `address`, `city`, `state`, `country`, `zipcode`.
-Test sẽ:
-1. Register với `UserData` data từ JSON (random email, fixed profile)
-2. Lấy expected address từ `UserData` object
-3. So sánh với `checkoutPage.getDeliveryAddress()` và `checkoutPage.getBillingAddress()`
-
-### 3. TC-014 – cart không mất khi login?
-
-Website `automationexercise.com` giữ cart trong session (cookie-based).
-Khi guest thêm sản phẩm → checkout → register/login → cart vẫn còn.
-Nếu site không giữ: step 12 của TC-014 "Click Cart button" → sẽ add lại.
-Test implement đúng theo từng step của TC-014, không workaround.
-
-### 4. Hover add-to-cart – dùng Actions hay jsClick?
-
-Homepage product cards dùng hover reveal: `overlay` chứa "Add to cart" chỉ xuất hiện khi hover.
-→ Dùng `hoverOver()` rồi `click()` bình thường.
-→ Nếu flaky, fallback: `jsClick()` với lý do rõ ràng trong comment.
-
-### 5. Subscription test email
-
-Dùng `RandomDataUtils.generateUniqueEmail()` để tránh rate-limit từ website.
+> [!CAUTION]
+> **TC-020 test flow**: `UserFlow.registerNewUser()` sẽ trả về `AccountCreatedPage` sau khi sửa, nhưng test hiện tại assign vào `SignupPage`. Cần update test.
 
 ---
 
 ## Verification Plan
 
-### Automated Tests
+### Sau mỗi P0-FIX
 ```bash
-# Compile và chạy toàn bộ
-mvn clean compile test-compile
-
-# Chạy từng group
-mvn clean test -Dtest=CartTest
-mvn clean test -Dtest=CheckoutTest
-mvn clean test -Dtest=SubscriptionTest
-mvn clean test -Dtest=ProductSearchTest
-mvn clean test -Dtest=CategoryBrandTest
-mvn clean test -Dtest=ReviewTest
-mvn clean test -Dtest=ScrollTest
-
-# Chạy full regression
-mvn clean test -DsuiteXmlFile=src/test/resources/suites/regression.xml
+mvn clean test-compile
+mvn test -Dtest=<focused_test>
 ```
 
-### Manual Verification
-- Xem Allure report: `mvn allure:serve`
-- Verify tất cả 26 TC xuất hiện đúng trong RTM
-- Verify smoke suite chạy < 10 phút
+### Sau P0-FIX-10
+```bash
+mvn clean test -DsuiteXmlFile=src/test/resources/suites/smoke.xml
+mvn clean test -DsuiteXmlFile=src/test/resources/suites/regression.xml  # Chạy 3 lần
+```
