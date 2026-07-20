@@ -27,6 +27,7 @@ import java.time.Duration;
  *     - iframe[id^='aswift_']
  *     - iframe[id^='google_ads_']
  *     - ins.adsbygoogle
+ *     - #google-anno-sa (Google AdSense ad-intent chip)
  *
  *   It does NOT hide:
  *     - Application modals
@@ -44,8 +45,8 @@ import java.time.Duration;
  *     Appears after page load. No URL fragment.
  *     Caught as ElementClickInterceptedException in AEBasePage.click().
  *
- * The demo site injects third-party vignette ads outside the application UI.
- * The workaround is deliberately scoped to known Google ad frames only.
+ * Google may also inject an ad-intent chip into product content. The workaround
+ * collapses it through its native close control before using the targeted fallback.
  */
 public final class AdHandler {
 
@@ -55,7 +56,11 @@ public final class AdHandler {
     private static final Duration OVERLAY_GONE_TIMEOUT = Duration.ofSeconds(3);
 
     private static final By KNOWN_AD_ELEMENTS = By.cssSelector(
-            "iframe[id^='aswift_'], iframe[id^='google_ads_'], ins.adsbygoogle");
+            "iframe[id^='aswift_'], iframe[id^='google_ads_'], ins.adsbygoogle, #google-anno-sa");
+
+    private static final By AD_INTENT_CHIP = By.id("google-anno-sa");
+    private static final By AD_INTENT_CLOSE = By.cssSelector(
+            "#google-anno-sa svg[role='button'][aria-label='Close shopping anchor']");
 
     private static final By[] KNOWN_AD_CLOSE_LOCATORS = {
         By.id("dismiss-button"),
@@ -73,7 +78,7 @@ public final class AdHandler {
      */
     private static final String HIDE_KNOWN_AD_ELEMENTS_JS =
         "var adFrames = document.querySelectorAll(" +
-        "  'iframe[id^=\"aswift_\"], iframe[id^=\"google_ads_\"], ins.adsbygoogle'" +
+        "  'iframe[id^=\"aswift_\"], iframe[id^=\"google_ads_\"], ins.adsbygoogle, #google-anno-sa'" +
         ");" +
         "for (var i = 0; i < adFrames.length; i++) {" +
         "  adFrames[i].style.setProperty('display', 'none', 'important');" +
@@ -137,8 +142,8 @@ public final class AdHandler {
      * third-party Google ad element (identified by its id prefix or class).
      *
      * DETECTION POLICY:
-     *   Only elements whose ids start with 'aswift_' or 'google_ads_', or
-     *   elements with class 'adsbygoogle', qualify as known third-party ads.
+     *   Only elements whose ids start with 'aswift_' or 'google_ads_', elements
+     *   with class 'adsbygoogle', or 'google-anno-' elements qualify as known ads.
      *   Any other intercepting element is a first-party blocker.
      *
      * @param exception the intercepted click exception
@@ -151,7 +156,8 @@ public final class AdHandler {
         }
         return message.contains("aswift_")
                 || message.contains("google_ads_")
-                || message.contains("adsbygoogle");
+                || message.contains("adsbygoogle")
+                || message.contains("google-anno-");
     }
 
     /**
@@ -170,6 +176,11 @@ public final class AdHandler {
         }
 
         log.warn("Attempting to dismiss blocking third-party ad...");
+
+        if (isDisplayed(driver, AD_INTENT_CHIP) && tryClick(driver, AD_INTENT_CLOSE)) {
+            log.info("Google ad-intent chip collapsed via its native close control.");
+            return;
+        }
 
         if (tryClickCloseButton(driver) && waitForKnownAdElementsGone(driver)) {
             log.info("Third-party ad dismissed via native Close button.");
@@ -190,17 +201,28 @@ public final class AdHandler {
 
     private static boolean tryClickCloseButton(WebDriver driver) {
         for (By locator : KNOWN_AD_CLOSE_LOCATORS) {
-            try {
-                WebElement btn = new WebDriverWait(driver, CLOSE_BUTTON_TIMEOUT)
-                    .until(ExpectedConditions.elementToBeClickable(locator));
-                btn.click();
-                log.debug("Clicked Close button: {}", locator);
+            if (tryClick(driver, locator)) {
                 return true;
-            } catch (TimeoutException | StaleElementReferenceException e) {
-                log.debug("Close button locator not usable: {}", locator, e);
             }
         }
         return false;
+    }
+
+    private static boolean tryClick(WebDriver driver, By locator) {
+        try {
+            WebElement button = new WebDriverWait(driver, CLOSE_BUTTON_TIMEOUT)
+                    .until(ExpectedConditions.elementToBeClickable(locator));
+            button.click();
+            log.debug("Clicked Close button: {}", locator);
+            return true;
+        } catch (TimeoutException | StaleElementReferenceException e) {
+            log.debug("Close button locator not usable: {}", locator, e);
+            return false;
+        }
+    }
+
+    private static boolean isDisplayed(WebDriver driver, By locator) {
+        return driver.findElements(locator).stream().anyMatch(AdHandler::isDisplayed);
     }
 
     private static boolean tryEscapeKey(WebDriver driver) {
