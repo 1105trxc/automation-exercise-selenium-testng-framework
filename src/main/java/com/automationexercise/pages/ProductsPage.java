@@ -73,7 +73,7 @@ public class ProductsPage extends AEBasePage {
      * Tất cả buttons dùng class "btn btn-default add-to-cart".
      */
     private static final By ADD_TO_CART_BUTTONS =
-            By.cssSelector(".productinfo.text-center a.add-to-cart");
+            By.cssSelector(".product-overlay a.add-to-cart");
 
     /** Sản phẩm đầu tiên – wrapper div để hover */
     private static final By FIRST_PRODUCT_WRAPPER =
@@ -85,11 +85,13 @@ public class ProductsPage extends AEBasePage {
 
     /** Add to cart button của sản phẩm đầu tiên */
     private static final By FIRST_ADD_TO_CART =
-            By.xpath("(//div[@class='productinfo text-center']//a[contains(@class,'add-to-cart')])[1]");
+            By.xpath("(//div[contains(@class,'product-image-wrapper')])[1]"
+                    + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]");
 
     /** Add to cart button của sản phẩm thứ hai */
     private static final By SECOND_ADD_TO_CART =
-            By.xpath("(//div[@class='productinfo text-center']//a[contains(@class,'add-to-cart')])[2]");
+            By.xpath("(//div[contains(@class,'product-image-wrapper')])[2]"
+                    + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]");
 
     // -----------------------------------------------------------------
     // Locators – Category Sidebar (TC-018)
@@ -254,7 +256,8 @@ public class ProductsPage extends AEBasePage {
             "(//div[contains(@class,'product-image-wrapper')])[" + oneBasedIndex + "]"
         );
         By overlayButton = By.xpath(
-            "(//div[contains(@class,'productinfo')]//a[contains(@class,'add-to-cart')])[" + oneBasedIndex + "]"
+            "(//div[contains(@class,'product-image-wrapper')])[" + oneBasedIndex + "]"
+                + "//div[contains(@class,'product-overlay')]//a[contains(@class,'add-to-cart')]"
         );
 
         log.info("Adding searched product #{} to cart", oneBasedIndex);
