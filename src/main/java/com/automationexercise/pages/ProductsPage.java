@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -168,6 +169,8 @@ public class ProductsPage extends AEBasePage {
     public ProductDetailPage clickFirstProductViewProduct() {
         log.info("Clicking 'View Product' for first product");
         click(FIRST_PRODUCT_VIEW);
+        // A navigation vignette can appear after the link accepts the click; never re-click here.
+        AdHandler.dismissIfPresent(driver);
         return new ProductDetailPage(driver);
     }
 
