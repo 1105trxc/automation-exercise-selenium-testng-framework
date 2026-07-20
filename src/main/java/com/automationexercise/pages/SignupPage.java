@@ -20,9 +20,7 @@ import org.slf4j.LoggerFactory;
  *     First name, Last name, Company, Address1, Address2,
  *     Country, State, City, Zipcode, Mobile number
  *
- * After filling all fields → Click "Create Account" → Account Created confirmation.
- *
- * NOTE: Phase 2 adds fillRegistrationForm(UserData) overload for data-driven tests.
+ * After filling all fields, clicking "Create Account" navigates to AccountCreatedPage.
  */
 public class SignupPage extends AEBasePage {
 
@@ -63,16 +61,6 @@ public class SignupPage extends AEBasePage {
     // -----------------------------------------------------------------
 
     private static final By CREATE_ACCOUNT_BUTTON = By.cssSelector("button[data-qa='create-account']");
-    private static final By CONTINUE_BUTTON        = By.cssSelector("a[data-qa='continue-button']");
-
-    /**
-     * LOCATOR NOTE:
-     * The DOM text is "Account Created!" (mixed case).
-     * CSS text-transform: uppercase makes it APPEAR as "ACCOUNT CREATED!" in browser.
-     * XPath normalize-space() reads the RAW DOM text, not the CSS-rendered text.
-     * → MUST use contains() with actual DOM text, not the visual text!
-     */
-    private static final By ACCOUNT_CREATED_MSG    = By.xpath("//h2[contains(@class,'title')]//b");
 
     // -----------------------------------------------------------------
     // Constructor
@@ -89,11 +77,6 @@ public class SignupPage extends AEBasePage {
     /** Confirms "Enter Account Information" heading is visible. */
     public boolean isAccountInfoVisible() {
         return isDisplayed(ACCOUNT_INFO_HEADING, 10);
-    }
-
-    /** Confirms "ACCOUNT CREATED!" is shown after successful registration. */
-    public boolean isAccountCreatedMessageVisible() {
-        return isDisplayed(ACCOUNT_CREATED_MSG, 10);
     }
 
     // -----------------------------------------------------------------
@@ -184,12 +167,7 @@ public class SignupPage extends AEBasePage {
     // Composite Method (convenience for tests)
     // -----------------------------------------------------------------
 
-    /**
-     * Fills all registration fields using a UserData model object.
-     * PHASE 2: Preferred method for data-driven tests (reads data from JSON).
-     *
-     * @param user UserData loaded from JSON via JsonDataReader
-     */
+    /** Fills all registration fields using a UserData model object. */
     public SignupPage fillRegistrationForm(UserData user) {
         log.info("Filling registration form from UserData: {} {}", user.getFirstName(), user.getLastName());
         if ("Mrs".equalsIgnoreCase(user.getTitle())) {

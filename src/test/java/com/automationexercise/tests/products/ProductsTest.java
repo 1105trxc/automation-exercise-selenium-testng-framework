@@ -1,11 +1,11 @@
 package com.automationexercise.tests.products;
 
 import com.automationexercise.base.BaseTest;
-import com.automationexercise.constants.RouteConstants;
 import com.automationexercise.listeners.TestListener;
 import com.automationexercise.pages.HomePage;
 import com.automationexercise.pages.ProductDetailPage;
 import com.automationexercise.pages.ProductsPage;
+import com.automationexercise.pages.TestCasesPage;
 import io.qameta.allure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,14 +53,9 @@ public class ProductsTest extends BaseTest {
                 "FAIL: Home page should be visible at start of test");
         log.info("TC-AE-007 START");
 
-        // Step 4: Click on 'Test Cases' button
-        homePage.getHeader().clickTestCases();
-
-        // Step 5: Verify that user is navigated to test cases page successfully
-        boolean onTestCasesPage = waitForUrlContains(RouteConstants.TEST_CASES);
-        Assert.assertTrue(onTestCasesPage,
-                "FAIL: URL should contain '/test_cases' after clicking Test Cases link. " +
-                "Actual URL: " + driver().getCurrentUrl());
+        TestCasesPage testCasesPage = homePage.getHeader().clickTestCases();
+        Assert.assertTrue(testCasesPage.isTestCasesPageVisible(),
+                "FAIL: Test Cases heading should be visible after navigation");
 
         log.info("TC-AE-007 PASS | Navigated to Test Cases page: {}", driver().getCurrentUrl());
     }
@@ -133,17 +128,4 @@ public class ProductsTest extends BaseTest {
         log.info("   Brand:        {}", detailPage.getBrand());
     }
 
-    // -----------------------------------------------------------------------
-    // Helper – delegates to BasePage via driver
-    // -----------------------------------------------------------------------
-
-    private boolean waitForUrlContains(String fragment) {
-        try {
-            new org.openqa.selenium.support.ui.WebDriverWait(driver(), java.time.Duration.ofSeconds(10))
-                .until(org.openqa.selenium.support.ui.ExpectedConditions.urlContains(fragment));
-            return true;
-        } catch (org.openqa.selenium.TimeoutException e) {
-            return false;
-        }
-    }
 }

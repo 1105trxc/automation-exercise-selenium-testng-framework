@@ -34,9 +34,6 @@ public class HomePage extends AEBasePage {
     /** Main slider on home page – proves the page loaded */
     private static final By HOME_PAGE_INDICATOR  = By.id("slider-carousel");
 
-    /** Continue button on confirmation pages when we land on home from them */
-    private static final By CONTINUE_BUTTON      = By.cssSelector("a[data-qa='continue-button']");
-
     // -----------------------------------------------------------------
     // Locators – Recommended Items (TC-022)
     // -----------------------------------------------------------------
@@ -83,20 +80,6 @@ public class HomePage extends AEBasePage {
     /** Verifies the home page has loaded by checking the main slider. */
     public boolean isHomePageVisible() {
         return isDisplayed(HOME_PAGE_INDICATOR);
-    }
-
-
-
-    // -----------------------------------------------------------------
-
-
-    /** Click "Continue" on confirmation pages */
-    public HomePage clickContinue() {
-        if (isDisplayed(CONTINUE_BUTTON, 5)) {
-            log.info("Clicking Continue button");
-            click(CONTINUE_BUTTON);
-        }
-        return this;
     }
 
     // -----------------------------------------------------------------
