@@ -105,6 +105,12 @@ public class ProductDetailPage extends AEBasePage {
         super(driver);
     }
 
+    /** Waits until the product-detail identity element is visible. */
+    public ProductDetailPage waitUntilLoaded() {
+        waitUntilVisible(PRODUCT_NAME);
+        return this;
+    }
+
     // -----------------------------------------------------------------
     // State Verification – Product Info (TC-008)
     // -----------------------------------------------------------------

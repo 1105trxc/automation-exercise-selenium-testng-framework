@@ -9,6 +9,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -153,6 +154,23 @@ public abstract class BasePage {
         return wait.until(ExpectedConditions.elementToBeClickable(locator));
     }
 
+    /** Waits for the browser to reach the expected origin, path, and query. */
+    protected boolean waitForUrl(String expectedUrl) {
+        URI expected = resolveAgainstCurrentUrl(expectedUrl);
+        try {
+            wait.until(currentDriver -> matchesNavigationTarget(
+                    currentDriver.getCurrentUrl(), expected));
+            return true;
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    /** Checks the current navigation target without waiting. URL fragments are ignored. */
+    protected boolean isAtUrl(String expectedUrl) {
+        return matchesNavigationTarget(driver.getCurrentUrl(), resolveAgainstCurrentUrl(expectedUrl));
+    }
+
     // =========================================================================
     // SCROLL ACTIONS
     // =========================================================================
@@ -219,5 +237,36 @@ public abstract class BasePage {
     /** Private helper để cast driver sang JavascriptExecutor. */
     private JavascriptExecutor js() {
         return (JavascriptExecutor) driver;
+    }
+
+    private URI resolveAgainstCurrentUrl(String url) {
+        URI candidate = URI.create(Objects.requireNonNull(url, "URL must not be null."));
+        return candidate.isAbsolute()
+                ? candidate.normalize()
+                : URI.create(driver.getCurrentUrl()).resolve(candidate).normalize();
+    }
+
+    private static boolean matchesNavigationTarget(String actualUrl, URI expected) {
+        try {
+            URI actual = URI.create(actualUrl).normalize();
+            return equalsIgnoreCase(actual.getScheme(), expected.getScheme())
+                    && equalsIgnoreCase(actual.getHost(), expected.getHost())
+                    && effectivePort(actual) == effectivePort(expected)
+                    && Objects.equals(actual.getRawPath(), expected.getRawPath())
+                    && Objects.equals(actual.getRawQuery(), expected.getRawQuery());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static boolean equalsIgnoreCase(String left, String right) {
+        return left == null ? right == null : right != null && left.equalsIgnoreCase(right);
+    }
+
+    private static int effectivePort(URI uri) {
+        if (uri.getPort() >= 0) {
+            return uri.getPort();
+        }
+        return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 }

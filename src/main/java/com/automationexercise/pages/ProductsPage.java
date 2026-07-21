@@ -2,6 +2,7 @@ package com.automationexercise.pages;
 
 import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
@@ -168,10 +169,38 @@ public class ProductsPage extends AEBasePage {
     /** Click "View Product" của sản phẩm đầu tiên → ProductDetailPage */
     public ProductDetailPage clickFirstProductViewProduct() {
         log.info("Clicking 'View Product' for first product");
+
+        String sourceUrl = driver.getCurrentUrl();
+        String targetUrl = waitUntilClickable(FIRST_PRODUCT_VIEW).getAttribute("href");
+        if (targetUrl == null || targetUrl.isBlank()) {
+            throw new IllegalStateException("First product View Product link has no href.");
+        }
+
         click(FIRST_PRODUCT_VIEW);
-        // A navigation vignette can appear after the link accepts the click; never re-click here.
-        AdHandler.dismissIfPresent(driver);
-        return new ProductDetailPage(driver);
+        boolean vignetteDismissed = AdHandler.dismissIfPresent(driver);
+
+        if (!waitForUrl(targetUrl)) {
+            if (!vignetteDismissed || !isAtUrl(sourceUrl)) {
+                throw detailNavigationTimeout(targetUrl);
+            }
+
+            // This bounded continuation is only for a side-effect-free GET link
+            // whose first click was proven to have opened a Google vignette.
+            log.warn("Vignette consumed View Product navigation. Continuing the link once.");
+            click(FIRST_PRODUCT_VIEW);
+            AdHandler.dismissIfPresent(driver);
+
+            if (!waitForUrl(targetUrl)) {
+                throw detailNavigationTimeout(targetUrl);
+            }
+        }
+
+        return new ProductDetailPage(driver).waitUntilLoaded();
+    }
+
+    private TimeoutException detailNavigationTimeout(String targetUrl) {
+        return new TimeoutException("View Product did not reach '" + targetUrl
+                + "'. Current URL: " + driver.getCurrentUrl());
     }
 
     // -----------------------------------------------------------------

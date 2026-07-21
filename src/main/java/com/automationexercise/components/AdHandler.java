@@ -39,7 +39,7 @@ import java.time.Duration;
  * AD TYPES ON THIS SITE:
  *   Type 1 – Google Vignette (URL fragment #google_vignette):
  *     Appears before or during page load. Dismissed via Escape key.
- *     Only called from BaseTest.setUp() after initial navigation.
+ *     Handled only at explicit, safe navigation boundaries.
  *
  *   Type 2 – Full-viewport iframe (aswift_N):
  *     Appears after page load. No URL fragment.
@@ -107,34 +107,36 @@ public final class AdHandler {
      *   Not as a generic self-healing mechanism after every business action.
      *
      * @param driver the current WebDriver instance
+     * @return true when a vignette was detected and dismissed
      */
-    public static void dismissIfPresent(WebDriver driver) {
+    public static boolean dismissIfPresent(WebDriver driver) {
         if (!isWorkaroundEnabled()) {
             log.debug("Third-party ad workaround is disabled by configuration.");
-            return;
+            return false;
         }
 
         if (!isVignettePresent(driver)) {
-            return;
+            return false;
         }
 
         log.warn("Google Vignette detected (URL: {}). Dismissing...", driver.getCurrentUrl());
 
-        if (tryEscapeKey(driver) && waitForVignetteGone(driver)) {
-            cleanUrlFragment(driver);
-            log.info("Vignette dismissed via Escape key.");
-            return;
-        }
-
         if (tryClickCloseButton(driver) && waitForVignetteGone(driver)) {
             cleanUrlFragment(driver);
             log.info("Vignette dismissed via Close button.");
-            return;
+            return true;
+        }
+
+        if (tryEscapeKey(driver) && waitForVignetteGone(driver)) {
+            cleanUrlFragment(driver);
+            log.info("Vignette dismissed via Escape key.");
+            return true;
         }
 
         log.warn("Could not dismiss Vignette via UI. Hiding exact known ad elements via JS.");
         hideKnownAdElements(driver);
         cleanUrlFragment(driver);
+        return true;
     }
 
     /**
