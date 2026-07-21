@@ -1,6 +1,7 @@
 package com.automationexercise.pages;
 
 import com.automationexercise.components.AddToCartModal;
+import com.automationexercise.components.AdHandler;
 import com.automationexercise.components.FooterSubscriptionComponent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -135,8 +136,22 @@ public class HomePage extends AEBasePage {
      */
     public HomePage clickScrollUpButton() {
         log.info("Clicking scroll-up arrow button");
+        String sourceUrl = driver.getCurrentUrl();
         click(SCROLL_UP_BUTTON);
-        return this;
+        boolean vignetteDismissed = AdHandler.dismissLinkTriggeredVignette(driver);
+
+        try {
+            return waitForScrollToTop();
+        } catch (TimeoutException timeout) {
+            if (!vignetteDismissed || !isAtUrl(sourceUrl)) {
+                throw timeout;
+            }
+
+            log.warn("Google vignette consumed scroll-up action. Continuing the arrow once.");
+            click(SCROLL_UP_BUTTON);
+            AdHandler.dismissLinkTriggeredVignette(driver);
+            return waitForScrollToTop();
+        }
     }
 
     /**
