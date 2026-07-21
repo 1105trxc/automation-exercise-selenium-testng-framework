@@ -39,9 +39,8 @@ public class UserFlow {
      *
      * FAIL-FAST POLICY:
      *   This method does not check the URL or silently continue on failure.
-     *   If clickCreateAccount() lands on an error state, the returned AccountCreatedPage
-     *   will fail the caller's assertion (isAccountCreatedVisible() returns false),
-     *   making the failure explicit.
+     *   clickCreateAccount() waits for the account-created state and propagates a
+     *   timeout if registration does not reach it.
      *
      * CLEANUP REGISTRATION:
      *   AccountCleanupService.registerAccountForCleanup() is called BEFORE clicking
@@ -51,7 +50,7 @@ public class UserFlow {
      * @param uniqueName   unique display name for signup
      * @param uniqueEmail  unique email address for signup
      * @param user         UserData with the rest of the registration details
-     * @return AccountCreatedPage – for the caller to assert isAccountCreatedVisible()
+     * @return the displayed account-created confirmation page
      */
     public AccountCreatedPage registerNewUser(String uniqueName, String uniqueEmail, UserData user) {
         log.info("UserFlow: registering new user '{}'", uniqueName);
@@ -84,13 +83,11 @@ public class UserFlow {
     public HomePage loginSuccessfully(String email, String password) {
         log.info("UserFlow: logging in as '{}'", email);
 
-        new HeaderComponent(driver)
+        return new HeaderComponent(driver)
                 .clickLoginSignup()
                 .enterLoginEmail(email)
                 .enterLoginPassword(password)
                 .clickLoginButton();
-
-        return new HomePage(driver);
     }
 
 }

@@ -14,7 +14,7 @@ public class AccountDeletedPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(AccountDeletedPage.class);
 
-    private static final By ACCOUNT_DELETED_HEADING = By.xpath("//h2[contains(@class,'title')]//b");
+    private static final By ACCOUNT_DELETED_HEADING = By.cssSelector("h2[data-qa='account-deleted']");
     private static final By CONTINUE_BUTTON         = By.cssSelector("a[data-qa='continue-button']");
 
     public AccountDeletedPage(WebDriver driver) {
@@ -42,7 +42,7 @@ public class AccountDeletedPage extends AEBasePage {
      */
     public HomePage clickContinue() {
         log.info("Clicking Continue after account deletion");
-        click(CONTINUE_BUTTON);
-        return new HomePage(driver);
+        clickSideEffectFreeNavigationLink(CONTINUE_BUTTON, "Continue after account deletion");
+        return new HomePage(driver).waitUntilLoaded();
     }
 }

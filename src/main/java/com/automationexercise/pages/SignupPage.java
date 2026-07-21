@@ -68,6 +68,12 @@ public class SignupPage extends AEBasePage {
         super(driver);
     }
 
+    /** Waits until the account information form is actually displayed. */
+    public SignupPage waitUntilLoaded() {
+        waitUntilVisible(ACCOUNT_INFO_HEADING);
+        return this;
+    }
+
     // -----------------------------------------------------------------
     // State Verification
     // -----------------------------------------------------------------
@@ -216,6 +222,6 @@ public class SignupPage extends AEBasePage {
     public AccountCreatedPage clickCreateAccount() {
         log.info("Clicking Create Account button");
         click(CREATE_ACCOUNT_BUTTON);
-        return new AccountCreatedPage(driver);
+        return new AccountCreatedPage(driver).waitUntilLoaded();
     }
 }

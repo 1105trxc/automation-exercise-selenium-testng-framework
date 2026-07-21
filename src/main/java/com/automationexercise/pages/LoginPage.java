@@ -125,7 +125,7 @@ public class LoginPage extends AEBasePage {
     public HomePage clickLoginButton() {
         log.info("Clicking Login button");
         click(LOGIN_BUTTON);
-        return new HomePage(driver);
+        return new HomePage(driver).waitUntilLoaded();
     }
 
     /**
@@ -161,7 +161,7 @@ public class LoginPage extends AEBasePage {
     public SignupPage clickSignupButton() {
         log.info("Clicking Signup button -> navigating to account details form");
         click(SIGNUP_BUTTON);
-        return new SignupPage(driver);
+        return new SignupPage(driver).waitUntilLoaded();
     }
 
     /**

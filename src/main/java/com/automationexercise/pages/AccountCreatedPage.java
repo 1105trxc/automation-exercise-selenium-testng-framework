@@ -14,7 +14,7 @@ public class AccountCreatedPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(AccountCreatedPage.class);
 
-    private static final By ACCOUNT_CREATED_HEADING = By.xpath("//h2[contains(@class,'title')]//b");
+    private static final By ACCOUNT_CREATED_HEADING = By.cssSelector("h2[data-qa='account-created']");
     private static final By CONTINUE_BUTTON         = By.cssSelector("a[data-qa='continue-button']");
 
     public AccountCreatedPage(WebDriver driver) {
@@ -27,6 +27,12 @@ public class AccountCreatedPage extends AEBasePage {
      */
     public boolean isAccountCreatedVisible() {
         return isDisplayed(ACCOUNT_CREATED_HEADING);
+    }
+
+    /** Waits until the account creation confirmation is actually displayed. */
+    public AccountCreatedPage waitUntilLoaded() {
+        waitUntilVisible(ACCOUNT_CREATED_HEADING);
+        return this;
     }
 
     /**
