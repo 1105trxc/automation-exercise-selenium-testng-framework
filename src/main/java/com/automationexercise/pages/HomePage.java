@@ -2,8 +2,11 @@ package com.automationexercise.pages;
 
 import com.automationexercise.components.FooterSubscriptionComponent;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +94,7 @@ public class HomePage extends AEBasePage {
      * Cần scrollToBottom() trước khi gọi method này.
      */
     public boolean isRecommendedItemsVisible() {
-        return isDisplayed(RECOMMENDED_SECTION, 5);
+        return isDisplayed(RECOMMENDED_SECTION);
     }
 
     /**
@@ -135,11 +138,11 @@ public class HomePage extends AEBasePage {
      */
     public HomePage waitForScrollToTop() {
         log.info("Waiting for scroll animation to reach top");
-        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
-            .until(d -> {
-                Long scrollY = (Long) ((org.openqa.selenium.JavascriptExecutor) d).executeScript("return Math.round(window.scrollY);");
-                return scrollY != null && scrollY <= 5; // Allow slight offset
-            });
+        wait.until(d -> {
+            Long scrollY = (Long) ((JavascriptExecutor) d)
+                    .executeScript("return Math.round(window.scrollY);");
+            return scrollY != null && scrollY <= 5;
+        });
         return this;
     }
 
@@ -149,10 +152,9 @@ public class HomePage extends AEBasePage {
      */
     public boolean isHeroTextVisible() {
         try {
-            org.openqa.selenium.WebElement heroText = waitUntilVisible(HERO_TEXT);
-            new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(15))
-                .until(d -> Boolean.TRUE.equals(
-                    ((org.openqa.selenium.JavascriptExecutor) d).executeScript(
+            WebElement heroText = waitUntilVisible(HERO_TEXT);
+            wait.until(d -> Boolean.TRUE.equals(
+                    ((JavascriptExecutor) d).executeScript(
                         "const el = arguments[0];" +
                         "const rect = el.getBoundingClientRect();" +
                         "const style = window.getComputedStyle(el);" +
@@ -168,7 +170,7 @@ public class HomePage extends AEBasePage {
                     )
                 ));
             return true;
-        } catch (org.openqa.selenium.TimeoutException e) {
+        } catch (TimeoutException e) {
             return false;
         }
     }
@@ -178,10 +180,7 @@ public class HomePage extends AEBasePage {
     // -----------------------------------------------------------------
 
     public HomePage goToBottom() {
-        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript(
-            "window.scrollTo(0, document.body.scrollHeight);" +
-            "window.dispatchEvent(new Event('scroll'));"
-        );
+        scrollToBottom();
         return this;
     }
 }

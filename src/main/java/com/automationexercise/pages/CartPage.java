@@ -3,6 +3,7 @@ package com.automationexercise.pages;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class CartPage extends AEBasePage {
      * Verify bằng breadcrumb "Shopping Cart" active item.
      */
     public boolean isCartPageVisible() {
-        return isDisplayed(CART_HEADING, 10);
+        return isDisplayed(CART_HEADING);
     }
 
     /**
@@ -112,8 +113,7 @@ public class CartPage extends AEBasePage {
      */
     public CartPage waitForCartEmpty() {
         log.info("Waiting for cart to become empty");
-        new org.openqa.selenium.support.ui.WebDriverWait(driver, java.time.Duration.ofSeconds(5))
-            .until(org.openqa.selenium.support.ui.ExpectedConditions.numberOfElementsToBe(CART_ROWS, 0));
+        wait.until(ExpectedConditions.numberOfElementsToBe(CART_ROWS, 0));
         return this;
     }
 

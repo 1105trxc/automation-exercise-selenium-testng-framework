@@ -26,12 +26,10 @@ import java.util.Objects;
  *
  * 1. click() KHÔNG tự động xử lý quảng cáo
  *    Lý do: Tự động fallback che giấu lỗi thật (locator sai, element disabled, v.v.)
-
  *
  * 2. isDisplayedNow() vs isDisplayed()
  *    - isDisplayedNow(): kiểm tra tức thì, không wait. Dùng cho negative assertion.
  *    - isDisplayed(locator): wait với default timeout. Dùng cho positive assertion.
- *    - isDisplayed(locator, seconds): explicit timeout. Dùng khi biết cần bao lâu.
  *
  * 3. type() không log nội dung nhập
  *    Lý do: Tránh lộ password và dữ liệu nhạy cảm trong log file.
@@ -118,22 +116,8 @@ public abstract class BasePage {
      *   Assert.assertTrue(homePage.isUserLoggedIn(), "Should be logged in");
      */
     protected boolean isDisplayed(By locator) {
-        return isDisplayed(locator, ConfigManager.getInt("explicitWait", 15));
-    }
-
-    /**
-     * Waits up to custom timeout (seconds), returns true nếu element visible.
-     *
-     * KHI NÀO DÙNG:
-     * - Khi biết element cần ít/nhiều thời gian hơn default (ví dụ: slow network = 20s)
-     *
-     * VÍ DỤ:
-     *   boolean hasLogoutLink = isDisplayed(LOGOUT_LINK, 5);
-     */
-    protected boolean isDisplayed(By locator, int timeoutSeconds) {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds))
-                    .until(ExpectedConditions.visibilityOfElementLocated(locator));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
             return true;
         } catch (TimeoutException e) {
             return false;

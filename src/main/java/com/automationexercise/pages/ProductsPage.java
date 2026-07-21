@@ -126,27 +126,27 @@ public class ProductsPage extends AEBasePage {
 
     /** Xác nhận "ALL PRODUCTS" heading visible */
     public boolean isAllProductsVisible() {
-        return isDisplayed(ALL_PRODUCTS_HEADING, 10);
+        return isDisplayed(ALL_PRODUCTS_HEADING);
     }
 
     /** Xác nhận ít nhất 1 sản phẩm có nút "View Product" */
     public boolean hasProducts() {
-        return isDisplayed(VIEW_PRODUCT_LINKS, 5);
+        return isDisplayed(VIEW_PRODUCT_LINKS);
     }
 
     /** Xác nhận "SEARCHED PRODUCTS" heading visible sau khi search */
     public boolean isSearchedProductsVisible() {
-        return isDisplayed(SEARCHED_PRODUCTS_HEADING, 10);
+        return isDisplayed(SEARCHED_PRODUCTS_HEADING);
     }
 
     /** Xác nhận category sidebar visible */
     public boolean isCategoryVisible() {
-        return isDisplayed(CATEGORY_SECTION, 5);
+        return isDisplayed(CATEGORY_SECTION);
     }
 
     /** Xác nhận brand sidebar visible */
     public boolean isBrandSectionVisible() {
-        return isDisplayed(BRANDS_SECTION, 5);
+        return isDisplayed(BRANDS_SECTION);
     }
 
     /** Trả về heading text của trang category/brand hiện tại */

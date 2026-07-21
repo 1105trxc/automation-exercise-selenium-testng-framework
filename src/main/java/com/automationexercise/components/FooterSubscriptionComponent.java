@@ -27,7 +27,7 @@ public class FooterSubscriptionComponent extends AEBasePage {
 
     /** Xác nhận "SUBSCRIPTION" heading visible ở footer */
     public boolean isSubscriptionVisible() {
-        return isDisplayed(SUBSCRIPTION_HEADING, 5);
+        return isDisplayed(SUBSCRIPTION_HEADING);
     }
 
     /**
@@ -48,6 +48,6 @@ public class FooterSubscriptionComponent extends AEBasePage {
 
     /** Verify "You have been successfully subscribed!" */
     public boolean isSubscribeSuccessVisible() {
-        return isDisplayed(SUBSCRIBE_SUCCESS_MSG, 5);
+        return isDisplayed(SUBSCRIBE_SUCCESS_MSG);
     }
 }

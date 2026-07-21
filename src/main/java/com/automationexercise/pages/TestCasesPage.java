@@ -18,6 +18,6 @@ public class TestCasesPage extends AEBasePage {
      * Confirms the Test Cases page heading is visible.
      */
     public boolean isTestCasesPageVisible() {
-        return isDisplayed(TEST_CASES_HEADING, 10);
+        return isDisplayed(TEST_CASES_HEADING);
     }
 }

@@ -183,7 +183,7 @@ public class CheckoutTest extends BaseTest {
         successPage.clickDownloadInvoice();
 
         java.nio.file.Path invoiceFile = com.automationexercise.utils.DownloadManager.waitForDownload(
-                "invoice.txt", java.time.Duration.ofSeconds(15));
+                "invoice.txt");
         Assert.assertTrue(java.nio.file.Files.exists(invoiceFile),
                 "FAIL: invoice.txt should exist in download directory");
         assertDownloadedFileIsNotEmpty(invoiceFile);

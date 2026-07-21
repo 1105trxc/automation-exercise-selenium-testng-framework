@@ -83,6 +83,12 @@ public final class DownloadManager {
         }
     }
 
+    /** Waits for a download using the configured downloadTimeout in seconds. */
+    public static Path waitForDownload(String fileName) {
+        Duration timeout = Duration.ofSeconds(ConfigManager.getInt("downloadTimeout", 15));
+        return waitForDownload(fileName, timeout);
+    }
+
     /**
      * Waits for a file to appear in the download directory, be non-empty,
      * and have a stable size (no .crdownload partial file).

@@ -115,12 +115,12 @@ public class ProductDetailPage extends AEBasePage {
     // State Verification – Product Info (TC-008)
     // -----------------------------------------------------------------
 
-    public boolean isProductDetailVisible()  { return isDisplayed(PRODUCT_NAME, 10); }
-    public boolean isCategoryVisible()       { return isDisplayed(PRODUCT_CATEGORY, 5); }
-    public boolean isPriceVisible()          { return isDisplayed(PRODUCT_PRICE, 5); }
-    public boolean isAvailabilityVisible()   { return isDisplayed(AVAILABILITY, 5); }
-    public boolean isConditionVisible()      { return isDisplayed(CONDITION, 5); }
-    public boolean isBrandVisible()          { return isDisplayed(BRAND, 5); }
+    public boolean isProductDetailVisible()  { return isDisplayed(PRODUCT_NAME); }
+    public boolean isCategoryVisible()       { return isDisplayed(PRODUCT_CATEGORY); }
+    public boolean isPriceVisible()          { return isDisplayed(PRODUCT_PRICE); }
+    public boolean isAvailabilityVisible()   { return isDisplayed(AVAILABILITY); }
+    public boolean isConditionVisible()      { return isDisplayed(CONDITION); }
+    public boolean isBrandVisible()          { return isDisplayed(BRAND); }
 
     // -----------------------------------------------------------------
     // Data Getters – Product Info
@@ -169,7 +169,7 @@ public class ProductDetailPage extends AEBasePage {
 
     /** Xác nhận "Write Your Review" section visible */
     public boolean isWriteReviewVisible() {
-        return isDisplayed(WRITE_REVIEW_HEADING, 5);
+        return isDisplayed(WRITE_REVIEW_HEADING);
     }
 
     /** Nhập tên reviewer */
@@ -202,6 +202,6 @@ public class ProductDetailPage extends AEBasePage {
 
     /** Xác nhận success message "Thank you for your review." */
     public boolean isReviewSuccessVisible() {
-        return isDisplayed(REVIEW_SUCCESS, 5);
+        return isDisplayed(REVIEW_SUCCESS);
     }
 }

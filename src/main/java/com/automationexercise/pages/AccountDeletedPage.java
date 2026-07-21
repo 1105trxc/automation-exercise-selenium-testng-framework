@@ -26,7 +26,7 @@ public class AccountDeletedPage extends AEBasePage {
      * Assert this in the test after receiving this page.
      */
     public boolean isAccountDeletedVisible() {
-        return isDisplayed(ACCOUNT_DELETED_HEADING, 10);
+        return isDisplayed(ACCOUNT_DELETED_HEADING);
     }
 
     /**

@@ -82,7 +82,7 @@ public class CheckoutPage extends AEBasePage {
      * Dùng để verify trang checkout đã load.
      */
     public boolean isDeliveryAddressVisible() {
-        return isDisplayed(DELIVERY_ADDRESS_BLOCK, 10);
+        return isDisplayed(DELIVERY_ADDRESS_BLOCK);
     }
 
     // -----------------------------------------------------------------

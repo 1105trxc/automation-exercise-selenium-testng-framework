@@ -26,7 +26,7 @@ public class AccountCreatedPage extends AEBasePage {
      * Use this assertion in the test immediately after receiving this page.
      */
     public boolean isAccountCreatedVisible() {
-        return isDisplayed(ACCOUNT_CREATED_HEADING, 10);
+        return isDisplayed(ACCOUNT_CREATED_HEADING);
     }
 
     /**

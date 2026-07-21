@@ -74,7 +74,7 @@ public class SignupPage extends AEBasePage {
 
     /** Confirms "Enter Account Information" heading is visible. */
     public boolean isAccountInfoVisible() {
-        return isDisplayed(ACCOUNT_INFO_HEADING, 10);
+        return isDisplayed(ACCOUNT_INFO_HEADING);
     }
 
     // -----------------------------------------------------------------

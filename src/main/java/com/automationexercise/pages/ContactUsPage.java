@@ -57,12 +57,12 @@ public class ContactUsPage extends AEBasePage {
 
     /** Xác nhận "Get In Touch" heading visible → đang ở đúng trang */
     public boolean isGetInTouchVisible() {
-        return isDisplayed(GET_IN_TOUCH_HEADING, 10);
+        return isDisplayed(GET_IN_TOUCH_HEADING);
     }
 
     /** Xác nhận message thành công visible sau khi submit */
     public boolean isSuccessMessageVisible() {
-        return isDisplayed(SUCCESS_MESSAGE, 10);
+        return isDisplayed(SUCCESS_MESSAGE);
     }
 
     /** Lấy text của success message */

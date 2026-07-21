@@ -39,7 +39,7 @@ public class HeaderComponent extends AEBasePage {
      * Logic: Logout link is visible.
      */
     public boolean isUserLoggedIn() {
-        return isDisplayed(LOGOUT_LINK, 5);
+        return isDisplayed(LOGOUT_LINK);
     }
 
     /** Returns the logged-in username from the "Logged in as <b>name</b>" text. */
@@ -52,7 +52,7 @@ public class HeaderComponent extends AEBasePage {
      * Used to confirm user is NOT logged in (e.g., after logout).
      */
     public boolean isLoginSignupLinkVisible() {
-        return isDisplayed(LOGIN_SIGNUP_LINK, 5);
+        return isDisplayed(LOGIN_SIGNUP_LINK);
     }
 
     // -----------------------------------------------------------------

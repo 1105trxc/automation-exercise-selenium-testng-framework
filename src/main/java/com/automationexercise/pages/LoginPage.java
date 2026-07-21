@@ -64,17 +64,17 @@ public class LoginPage extends AEBasePage {
 
     /** Confirms we are on the login page. */
     public boolean isLoginPageVisible() {
-        return isDisplayed(LOGIN_HEADING, 10);
+        return isDisplayed(LOGIN_HEADING);
     }
 
     /** Confirms the "New User Signup!" section is visible. */
     public boolean isSignupSectionVisible() {
-        return isDisplayed(SIGNUP_HEADING, 5);
+        return isDisplayed(SIGNUP_HEADING);
     }
 
     /** Checks if login error message is displayed. */
     public boolean isLoginErrorVisible() {
-        return isDisplayed(LOGIN_ERROR, 5);
+        return isDisplayed(LOGIN_ERROR);
     }
 
     /** Returns the login error message text. */
@@ -84,7 +84,7 @@ public class LoginPage extends AEBasePage {
 
     /** Checks if "Email Address already exist!" error is shown. */
     public boolean isEmailExistsErrorVisible() {
-        return isDisplayed(EMAIL_EXISTS_ERROR, 5);
+        return isDisplayed(EMAIL_EXISTS_ERROR);
     }
 
     /** Returns the "email already exists" error text. */

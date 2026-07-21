@@ -66,7 +66,7 @@ public class PaymentSuccessPage extends AEBasePage {
 
     /** Xác nhận "Download Invoice" button visible (TC-024) */
     public boolean isDownloadInvoiceVisible() {
-        return isDisplayed(DOWNLOAD_INVOICE_BTN, 5);
+        return isDisplayed(DOWNLOAD_INVOICE_BTN);
     }
 
     // -----------------------------------------------------------------

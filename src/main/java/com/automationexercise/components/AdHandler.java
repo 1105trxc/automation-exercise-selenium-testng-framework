@@ -52,8 +52,8 @@ public final class AdHandler {
 
     private static final Logger log = LoggerFactory.getLogger(AdHandler.class);
 
-    private static final Duration CLOSE_BUTTON_TIMEOUT = Duration.ofSeconds(3);
-    private static final Duration OVERLAY_GONE_TIMEOUT = Duration.ofSeconds(3);
+    private static final Duration AD_WAIT_TIMEOUT = Duration.ofSeconds(
+            ConfigManager.getInt("thirdPartyAdWait", 3));
 
     private static final By KNOWN_AD_ELEMENTS = By.cssSelector(
             "iframe[id^='aswift_'], iframe[id^='google_ads_'], ins.adsbygoogle, #google-anno-sa");
@@ -212,7 +212,7 @@ public final class AdHandler {
 
     private static boolean tryClick(WebDriver driver, By locator) {
         try {
-            WebElement button = new WebDriverWait(driver, CLOSE_BUTTON_TIMEOUT)
+            WebElement button = new WebDriverWait(driver, AD_WAIT_TIMEOUT)
                     .until(ExpectedConditions.elementToBeClickable(locator));
             button.click();
             log.debug("Clicked Close button: {}", locator);
@@ -254,7 +254,7 @@ public final class AdHandler {
 
     private static boolean waitForVignetteGone(WebDriver driver) {
         try {
-            new WebDriverWait(driver, OVERLAY_GONE_TIMEOUT)
+            new WebDriverWait(driver, AD_WAIT_TIMEOUT)
                 .until(d -> !d.getCurrentUrl().contains("google_vignette"));
             return true;
         } catch (TimeoutException e) {
@@ -265,7 +265,7 @@ public final class AdHandler {
 
     private static boolean waitForKnownAdElementsGone(WebDriver driver) {
         try {
-            new WebDriverWait(driver, OVERLAY_GONE_TIMEOUT)
+            new WebDriverWait(driver, AD_WAIT_TIMEOUT)
                     .until(d -> d.findElements(KNOWN_AD_ELEMENTS).stream()
                             .noneMatch(AdHandler::isDisplayed));
             return true;
