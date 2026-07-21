@@ -20,4 +20,10 @@ public class TestCasesPage extends AEBasePage {
     public boolean isTestCasesPageVisible() {
         return isDisplayed(TEST_CASES_HEADING);
     }
+
+    /** Waits until the Test Cases page heading is actually displayed. */
+    public TestCasesPage waitUntilLoaded() {
+        waitUntilVisible(TEST_CASES_HEADING);
+        return this;
+    }
 }

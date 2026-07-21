@@ -90,6 +90,12 @@ public class HomePage extends AEBasePage {
         return isDisplayed(HOME_PAGE_INDICATOR);
     }
 
+    /** Waits until the main home-page carousel is actually displayed. */
+    public HomePage waitUntilLoaded() {
+        waitUntilVisible(HOME_PAGE_INDICATOR);
+        return this;
+    }
+
     // -----------------------------------------------------------------
     // Recommended Items (TC-022)
     // -----------------------------------------------------------------

@@ -8,9 +8,11 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.JavascriptException;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.NoSuchFrameException;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -58,6 +60,9 @@ public final class AdHandler {
     private static final By KNOWN_AD_ELEMENTS = By.cssSelector(
             "iframe[id^='aswift_'], iframe[id^='google_ads_'], ins.adsbygoogle, #google-anno-sa");
 
+    private static final By KNOWN_AD_IFRAMES = By.cssSelector(
+            "iframe[id^='aswift_'], iframe[id^='google_ads_']");
+
     private static final By AD_INTENT_CHIP = By.id("google-anno-sa");
     private static final By AD_INTENT_CLOSE = By.cssSelector(
             "#google-anno-sa svg[role='button'][aria-label='Close shopping anchor']");
@@ -65,7 +70,9 @@ public final class AdHandler {
     private static final By[] KNOWN_AD_CLOSE_LOCATORS = {
         By.id("dismiss-button"),
         By.cssSelector("button[aria-label='Close ad']"),
-        By.cssSelector("[aria-label='Close advertisement']")
+        By.cssSelector("[aria-label='Close advertisement']"),
+        By.cssSelector("[role='button'][aria-label='Close']"),
+        By.xpath("//*[@role='button' and normalize-space()='Close']")
     };
 
     /**
@@ -140,6 +147,44 @@ public final class AdHandler {
     }
 
     /**
+     * Dismisses a vignette triggered by a navigation link without mutating ad DOM.
+     *
+     * Link-triggered vignettes participate in browser navigation. Hiding their
+     * iframe can strand the browser on the source page after a destructive action,
+     * so this boundary permits only the ad's close control, Escape, or browser Back.
+     *
+     * @return true when a link-triggered vignette was detected and dismissed
+     */
+    public static boolean dismissLinkTriggeredVignette(WebDriver driver) {
+        if (!isWorkaroundEnabled() || !isVignettePresent(driver)) {
+            return false;
+        }
+
+        log.warn("Link-triggered Google Vignette detected (URL: {}). Dismissing natively...",
+                driver.getCurrentUrl());
+
+        if (tryClickCloseButton(driver) && waitForVignetteGone(driver)) {
+            cleanUrlFragment(driver);
+            log.info("Link-triggered vignette dismissed via Close button.");
+            return true;
+        }
+
+        if (tryEscapeKey(driver) && waitForVignetteGone(driver)) {
+            cleanUrlFragment(driver);
+            log.info("Link-triggered vignette dismissed via Escape key.");
+            return true;
+        }
+
+        if (tryBrowserBack(driver) && waitForVignetteGone(driver)) {
+            log.info("Link-triggered vignette dismissed via browser Back.");
+            return true;
+        }
+
+        throw new IllegalStateException(
+                "Could not dismiss link-triggered Google vignette through supported browser UI.");
+    }
+
+    /**
      * Returns true if the ElementClickInterceptedException was caused by a known
      * third-party Google ad element (identified by its id prefix or class).
      *
@@ -202,9 +247,73 @@ public final class AdHandler {
     }
 
     private static boolean tryClickCloseButton(WebDriver driver) {
+        try {
+            return new WebDriverWait(driver, AD_WAIT_TIMEOUT).until(currentDriver -> {
+                currentDriver.switchTo().defaultContent();
+                try {
+                    if (clickCloseInCurrentContext(currentDriver)) {
+                        return true;
+                    }
+
+                    for (WebElement adFrame : currentDriver.findElements(KNOWN_AD_IFRAMES)) {
+                        try {
+                            currentDriver.switchTo().frame(adFrame);
+                            if (clickCloseInFrameTree(currentDriver, 2)) {
+                                return true;
+                            }
+                        } catch (NoSuchFrameException | StaleElementReferenceException e) {
+                            log.debug("Known Google ad frame changed while locating its Close control.", e);
+                        } finally {
+                            currentDriver.switchTo().defaultContent();
+                        }
+                    }
+                    return false;
+                } finally {
+                    currentDriver.switchTo().defaultContent();
+                }
+            });
+        } catch (TimeoutException e) {
+            log.debug("No native Close control found in known Google ad contexts.", e);
+            return false;
+        }
+    }
+
+    private static boolean clickCloseInFrameTree(WebDriver driver, int remainingDepth) {
+        if (clickCloseInCurrentContext(driver)) {
+            return true;
+        }
+        if (remainingDepth == 0) {
+            return false;
+        }
+
+        for (WebElement nestedFrame : driver.findElements(By.tagName("iframe"))) {
+            try {
+                driver.switchTo().frame(nestedFrame);
+                if (clickCloseInFrameTree(driver, remainingDepth - 1)) {
+                    return true;
+                }
+            } catch (NoSuchFrameException | StaleElementReferenceException e) {
+                log.debug("Nested Google ad frame changed while locating its Close control.", e);
+            } finally {
+                driver.switchTo().parentFrame();
+            }
+        }
+        return false;
+    }
+
+    private static boolean clickCloseInCurrentContext(WebDriver driver) {
         for (By locator : KNOWN_AD_CLOSE_LOCATORS) {
-            if (tryClick(driver, locator)) {
-                return true;
+            for (WebElement button : driver.findElements(locator)) {
+                try {
+                    if (button.isDisplayed() && button.isEnabled()) {
+                        button.click();
+                        log.debug("Clicked native Google ad Close control: {}", locator);
+                        return true;
+                    }
+                } catch (ElementNotInteractableException
+                         | StaleElementReferenceException e) {
+                    log.debug("Google ad Close control was not usable: {}", locator, e);
+                }
             }
         }
         return false;
@@ -233,6 +342,16 @@ public final class AdHandler {
             return true;
         } catch (NoSuchElementException | ElementNotInteractableException e) {
             log.debug("Escape did not dismiss vignette ad.", e);
+            return false;
+        }
+    }
+
+    private static boolean tryBrowserBack(WebDriver driver) {
+        try {
+            driver.navigate().back();
+            return true;
+        } catch (WebDriverException e) {
+            log.debug("Browser Back did not dismiss vignette ad.", e);
             return false;
         }
     }

@@ -101,6 +101,12 @@ public class CartPage extends AEBasePage {
         return isDisplayed(CART_HEADING);
     }
 
+    /** Waits until the shopping cart breadcrumb is actually displayed. */
+    public CartPage waitUntilLoaded() {
+        waitUntilVisible(CART_HEADING);
+        return this;
+    }
+
     /**
      * Kiểm tra cart có trống không (không có row nào).
      */

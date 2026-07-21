@@ -62,8 +62,8 @@ public class HeaderComponent extends AEBasePage {
     /** Click "Signup / Login" in the nav bar → LoginPage */
     public LoginPage clickLoginSignup() {
         log.info("Clicking Signup / Login link in Header");
-        click(LOGIN_SIGNUP_LINK);
-        return new LoginPage(driver);
+        clickSideEffectFreeNavigationLink(LOGIN_SIGNUP_LINK, "Signup / Login");
+        return new LoginPage(driver).waitUntilLoaded();
     }
 
     /** Click "Logout" → LoginPage */
@@ -71,7 +71,8 @@ public class HeaderComponent extends AEBasePage {
         log.info("Clicking Logout link in Header");
         scrollToTop();
         click(LOGOUT_LINK);
-        return new LoginPage(driver);
+        AdHandler.dismissLinkTriggeredVignette(driver);
+        return new LoginPage(driver).waitUntilLoaded();
     }
 
     /** Click "Delete Account" → AccountDeletedPage */
@@ -79,34 +80,35 @@ public class HeaderComponent extends AEBasePage {
         log.info("Clicking Delete Account link in Header");
         scrollToTop();
         click(DELETE_ACCOUNT_LINK);
-        return new AccountDeletedPage(driver);
+        AdHandler.dismissLinkTriggeredVignette(driver);
+        return new AccountDeletedPage(driver).waitUntilLoaded();
     }
 
     /** Click "Contact us" → ContactUsPage */
     public ContactUsPage clickContactUs() {
         log.info("Clicking Contact us link in Header");
-        click(CONTACT_US_LINK);
-        return new ContactUsPage(driver);
+        clickSideEffectFreeNavigationLink(CONTACT_US_LINK, "Contact us");
+        return new ContactUsPage(driver).waitUntilLoaded();
     }
 
     /** Click "Products" in nav → ProductsPage */
     public ProductsPage clickProducts() {
         log.info("Clicking Products link in Header");
-        click(PRODUCTS_LINK);
-        return new ProductsPage(driver);
+        clickSideEffectFreeNavigationLink(PRODUCTS_LINK, "Products");
+        return new ProductsPage(driver).waitUntilLoaded();
     }
 
     /** Click "Test Cases" in nav → TestCasesPage */
     public TestCasesPage clickTestCases() {
         log.info("Clicking Test Cases link in Header");
-        click(TEST_CASES_LINK);
-        return new TestCasesPage(driver);
+        clickSideEffectFreeNavigationLink(TEST_CASES_LINK, "Test Cases");
+        return new TestCasesPage(driver).waitUntilLoaded();
     }
 
     /** Click "Cart" in nav → CartPage */
     public CartPage clickCart() {
         log.info("Clicking Cart link in Header");
-        click(CART_LINK);
-        return new CartPage(driver);
+        clickSideEffectFreeNavigationLink(CART_LINK, "Cart");
+        return new CartPage(driver).waitUntilLoaded();
     }
 }

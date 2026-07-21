@@ -36,7 +36,7 @@ public class AccountCreatedPage extends AEBasePage {
      */
     public HomePage clickContinue() {
         log.info("Clicking Continue after account creation");
-        click(CONTINUE_BUTTON);
-        return new HomePage(driver);
+        clickSideEffectFreeNavigationLink(CONTINUE_BUTTON, "Continue after account creation");
+        return new HomePage(driver).waitUntilLoaded();
     }
 }

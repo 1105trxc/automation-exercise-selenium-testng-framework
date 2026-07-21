@@ -60,6 +60,12 @@ public class ContactUsPage extends AEBasePage {
         return isDisplayed(GET_IN_TOUCH_HEADING);
     }
 
+    /** Waits until the Contact Us form is actually displayed. */
+    public ContactUsPage waitUntilLoaded() {
+        waitUntilVisible(GET_IN_TOUCH_HEADING);
+        return this;
+    }
+
     /** Xác nhận message thành công visible sau khi submit */
     public boolean isSuccessMessageVisible() {
         return isDisplayed(SUCCESS_MESSAGE);

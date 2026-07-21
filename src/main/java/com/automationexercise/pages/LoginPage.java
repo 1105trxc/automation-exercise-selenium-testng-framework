@@ -67,6 +67,12 @@ public class LoginPage extends AEBasePage {
         return isDisplayed(LOGIN_HEADING);
     }
 
+    /** Waits until the login form is actually displayed. */
+    public LoginPage waitUntilLoaded() {
+        waitUntilVisible(LOGIN_HEADING);
+        return this;
+    }
+
     /** Confirms the "New User Signup!" section is visible. */
     public boolean isSignupSectionVisible() {
         return isDisplayed(SIGNUP_HEADING);

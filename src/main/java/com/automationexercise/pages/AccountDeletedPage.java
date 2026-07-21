@@ -29,6 +29,12 @@ public class AccountDeletedPage extends AEBasePage {
         return isDisplayed(ACCOUNT_DELETED_HEADING);
     }
 
+    /** Waits until the account deletion confirmation is actually displayed. */
+    public AccountDeletedPage waitUntilLoaded() {
+        waitUntilVisible(ACCOUNT_DELETED_HEADING);
+        return this;
+    }
+
     /**
      * Clicks "Continue" to return to the HomePage after account deletion.
      *
