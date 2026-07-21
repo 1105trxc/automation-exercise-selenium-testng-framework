@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -85,6 +86,12 @@ public class CheckoutPage extends AEBasePage {
         return isDisplayed(DELIVERY_ADDRESS_BLOCK);
     }
 
+    /** Waits until the checkout delivery address is actually displayed. */
+    public CheckoutPage waitUntilLoaded() {
+        waitUntilVisible(DELIVERY_ADDRESS_BLOCK);
+        return this;
+    }
+
     // -----------------------------------------------------------------
     // Address Getters (for TC-023 address verification)
     // -----------------------------------------------------------------
@@ -149,6 +156,7 @@ public class CheckoutPage extends AEBasePage {
     public PaymentPage clickPlaceOrder() {
         log.info("Clicking Place Order");
         click(PLACE_ORDER_BTN);
-        return new PaymentPage(driver);
+        AdHandler.dismissLinkTriggeredVignette(driver);
+        return new PaymentPage(driver).waitUntilLoaded();
     }
 }

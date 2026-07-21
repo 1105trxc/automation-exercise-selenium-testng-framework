@@ -52,9 +52,11 @@ public class PaymentPage extends AEBasePage {
         super(driver);
     }
 
-    // -----------------------------------------------------------------
-    // State Verification
-    // -----------------------------------------------------------------
+    /** Waits until the payment form is actually displayed. */
+    public PaymentPage waitUntilLoaded() {
+        waitUntilVisible(NAME_ON_CARD);
+        return this;
+    }
 
     // -----------------------------------------------------------------
     // Form Actions – Fluent API
@@ -97,7 +99,7 @@ public class PaymentPage extends AEBasePage {
     public PaymentSuccessPage clickPayAndConfirm() {
         log.info("Clicking Pay and Confirm Order");
         click(PAY_BUTTON);
-        return new PaymentSuccessPage(driver);
+        return new PaymentSuccessPage(driver).waitUntilLoaded();
     }
 
     // -----------------------------------------------------------------

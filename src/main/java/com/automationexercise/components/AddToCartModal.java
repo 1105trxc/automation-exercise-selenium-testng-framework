@@ -68,8 +68,8 @@ public class AddToCartModal extends AEBasePage {
      */
     public CartPage clickViewCart() {
         log.info("Clicking View Cart in Add to Cart modal");
-        click(VIEW_CART_LINK);
-        return new CartPage(driver);
+        clickSideEffectFreeNavigationLink(VIEW_CART_LINK, "View Cart");
+        return new CartPage(driver).waitUntilLoaded();
     }
 
 }

@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -64,6 +65,12 @@ public class PaymentSuccessPage extends AEBasePage {
         return getText(ORDER_PLACED_HEADING);
     }
 
+    /** Waits until the order confirmation heading is actually displayed. */
+    public PaymentSuccessPage waitUntilLoaded() {
+        waitUntilVisible(ORDER_PLACED_HEADING);
+        return this;
+    }
+
     /** Xác nhận "Download Invoice" button visible (TC-024) */
     public boolean isDownloadInvoiceVisible() {
         return isDisplayed(DOWNLOAD_INVOICE_BTN);
@@ -77,6 +84,7 @@ public class PaymentSuccessPage extends AEBasePage {
     public PaymentSuccessPage clickDownloadInvoice() {
         log.info("Clicking Download Invoice");
         click(DOWNLOAD_INVOICE_BTN);
+        AdHandler.dismissLinkTriggeredVignette(driver);
         return this;
     }
 
@@ -86,7 +94,7 @@ public class PaymentSuccessPage extends AEBasePage {
      */
     public HomePage clickContinue() {
         log.info("Clicking Continue on order success page");
-        click(CONTINUE_BTN);
-        return new HomePage(driver);
+        clickSideEffectFreeNavigationLink(CONTINUE_BTN, "Continue after order success");
+        return new HomePage(driver).waitUntilLoaded();
     }
 }

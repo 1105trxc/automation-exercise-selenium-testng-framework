@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -36,11 +37,6 @@ import java.util.List;
  *     </tr>
  *   </tbody>
  * </table>
- *
- * MODAL AFTER ADD TO CART:
- * Khi click "Add to cart" từ ProductsPage, website hiện modal với 2 options:
- * - "Continue Shopping" → đóng modal, ở lại ProductsPage
- * - "View Cart" → navigate đến CartPage
  */
 public class CartPage extends AEBasePage {
 
@@ -203,6 +199,7 @@ public class CartPage extends AEBasePage {
         log.info("Removing product at cart row {}", rowIndex);
         WebElement row = getRow(rowIndex);
         row.findElement(ROW_DELETE).click();
+        AdHandler.dismissLinkTriggeredVignette(driver);
         return this;
     }
 
@@ -212,8 +209,8 @@ public class CartPage extends AEBasePage {
      */
     public CheckoutPage clickProceedToCheckoutLoggedIn() {
         log.info("Clicking Proceed To Checkout (Logged In)");
-        click(PROCEED_TO_CHECKOUT_BTN);
-        return new CheckoutPage(driver);
+        clickSideEffectFreeNavigationLink(PROCEED_TO_CHECKOUT_BTN, "Proceed To Checkout");
+        return new CheckoutPage(driver).waitUntilLoaded();
     }
 
     /**
@@ -223,6 +220,7 @@ public class CartPage extends AEBasePage {
     public CartPage clickProceedToCheckoutGuest() {
         log.info("Clicking Proceed To Checkout (Guest)");
         click(PROCEED_TO_CHECKOUT_BTN);
+        AdHandler.dismissLinkTriggeredVignette(driver);
         // Wait for modal to appear
         waitUntilVisible(REGISTER_LOGIN_LINK);
         return this;
@@ -235,8 +233,8 @@ public class CartPage extends AEBasePage {
      */
     public LoginPage clickRegisterLoginInModal() {
         log.info("Clicking Register / Login in checkout modal");
-        click(REGISTER_LOGIN_LINK);
-        return new LoginPage(driver);
+        clickSideEffectFreeNavigationLink(REGISTER_LOGIN_LINK, "Register / Login from checkout");
+        return new LoginPage(driver).waitUntilLoaded();
     }
 
     // -----------------------------------------------------------------
