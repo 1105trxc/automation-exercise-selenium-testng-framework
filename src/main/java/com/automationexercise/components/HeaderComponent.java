@@ -2,6 +2,7 @@ package com.automationexercise.components;
 
 import com.automationexercise.pages.*;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,10 +70,42 @@ public class HeaderComponent extends AEBasePage {
     /** Click "Logout" → LoginPage */
     public LoginPage clickLogout() {
         log.info("Clicking Logout link in Header");
+        String sourceUrl = driver.getCurrentUrl();
         scrollToTop();
         click(LOGOUT_LINK);
-        AdHandler.dismissLinkTriggeredVignette(driver);
-        return new LoginPage(driver).waitUntilLoaded();
+        boolean vignetteDismissed = AdHandler.dismissLinkTriggeredVignette(driver);
+
+        LoginPage loginPage = new LoginPage(driver);
+        try {
+            return loginPage.waitUntilLoaded();
+        } catch (TimeoutException timeout) {
+            if (!vignetteDismissed || !isAtUrl(sourceUrl)) {
+                throw timeout;
+            }
+
+            return recoverLogoutAfterVignette(loginPage, timeout);
+        }
+    }
+
+    private LoginPage recoverLogoutAfterVignette(LoginPage loginPage, TimeoutException originalTimeout) {
+        log.warn("Vignette closed without reaching Login. Reloading source to verify session state.");
+        driver.navigate().refresh();
+        AdHandler.dismissIfPresent(driver);
+
+        if (isDisplayedNow(LOGOUT_LINK)) {
+            log.warn("Authenticated state persisted after reload. Continuing Logout once.");
+            click(LOGOUT_LINK);
+            AdHandler.dismissLinkTriggeredVignette(driver);
+            return loginPage.waitUntilLoaded();
+        }
+
+        if (isDisplayedNow(LOGIN_SIGNUP_LINK)) {
+            log.info("Logout succeeded before reload. Opening the Login page without repeating Logout.");
+            clickSideEffectFreeNavigationLink(LOGIN_SIGNUP_LINK, "Signup / Login after Logout");
+            return loginPage.waitUntilLoaded();
+        }
+
+        throw originalTimeout;
     }
 
     /** Click "Delete Account" → AccountDeletedPage */
