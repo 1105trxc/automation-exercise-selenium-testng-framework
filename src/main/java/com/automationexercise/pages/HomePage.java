@@ -72,7 +72,10 @@ public class HomePage extends AEBasePage {
      * "Full-Fledged practice website for Automation Engineers"
      */
     private static final By HERO_TEXT = By.xpath(
-            "//div[contains(@class,'item active')]//h2[contains(text(),'Full-Fledged')]");
+            "//div[contains(@class,'carousel-inner')]"
+                    + "//div[contains(concat(' ', normalize-space(@class), ' '), ' item ')"
+                    + " and contains(concat(' ', normalize-space(@class), ' '), ' active ')]"
+                    + "//h2[contains(normalize-space(.),'Full-Fledged')]");
 
     // -----------------------------------------------------------------
     // Constructor
@@ -122,6 +125,7 @@ public class HomePage extends AEBasePage {
         scrollIntoView(RECOMMENDED_SECTION);
         hoverOver(RECOMMENDED_SECTION);
         click(FIRST_RECOMMENDED_ADD_TO_CART);
+        AdHandler.dismissLinkTriggeredVignette(driver);
         return new AddToCartModal(driver).waitForModal();
     }
 

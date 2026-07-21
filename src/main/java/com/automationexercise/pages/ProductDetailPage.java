@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -160,6 +161,7 @@ public class ProductDetailPage extends AEBasePage {
     public ProductDetailPage clickAddToCart() {
         log.info("Clicking Add to Cart on product detail page");
         click(ADD_TO_CART_BTN);
+        AdHandler.dismissLinkTriggeredVignette(driver);
         return this;
     }
 

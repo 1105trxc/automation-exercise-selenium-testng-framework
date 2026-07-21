@@ -99,7 +99,6 @@ public class CategoryBrandTest extends BaseTest {
                 "FAIL: Brands sidebar should be visible on Products page");
 
         String firstBrand = productsPage.getBrandNameAt(1);
-        String secondBrand = productsPage.getBrandNameAt(2);
         productsPage.clickBrandAt(1);
 
         String firstBrandHeading = productsPage.getCategoryPageHeading();
@@ -109,6 +108,7 @@ public class CategoryBrandTest extends BaseTest {
         Assert.assertTrue(productsPage.hasProducts(),
                 "FAIL: Products should be visible for Polo brand");
 
+        String secondBrand = productsPage.getBrandNameAt(2);
         productsPage.clickBrandAt(2);
         String secondBrandHeading = productsPage.getCategoryPageHeading();
         log.info("TC-AE-019 | Second brand heading: '{}'", secondBrandHeading);

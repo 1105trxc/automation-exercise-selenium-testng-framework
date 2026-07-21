@@ -1,13 +1,15 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AddToCartModal;
+import com.automationexercise.components.AdHandler;
 import org.openqa.selenium.By;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * ProductsPage – Page Object cho trang /products.
@@ -64,6 +66,8 @@ public class ProductsPage extends AEBasePage {
 
     /** "SEARCHED PRODUCTS" heading */
     private static final By SEARCHED_PRODUCTS_HEADING = By.xpath("//h2[normalize-space()='Searched Products']");
+
+    private static final By PRODUCT_NAMES = By.cssSelector(".productinfo p");
 
     // -----------------------------------------------------------------
     // Locators – Add to Cart (hover cards)
@@ -160,10 +164,12 @@ public class ProductsPage extends AEBasePage {
 
 
     /** Trả về danh sách tên các sản phẩm đang hiển thị trên trang */
-    public java.util.List<String> getVisibleProductNames() {
-        return driver.findElements(org.openqa.selenium.By.cssSelector(".productinfo p")).stream()
-                .map(org.openqa.selenium.WebElement::getText)
-                .collect(java.util.stream.Collectors.toList());
+    public List<String> getVisibleProductNames() {
+        return driver.findElements(PRODUCT_NAMES).stream()
+                .filter(WebElement::isDisplayed)
+                .map(WebElement::getText)
+                .map(String::trim)
+                .toList();
     }
 
     // -----------------------------------------------------------------
@@ -234,11 +240,11 @@ public class ProductsPage extends AEBasePage {
      * @param oneBasedIndex 1-based index of the product to add
      * @return AddToCartModal ready to call .clickContinueShopping() or .clickViewCart()
      */
-    public com.automationexercise.components.AddToCartModal addSearchedProductAt(int oneBasedIndex) {
+    public AddToCartModal addSearchedProductAt(int oneBasedIndex) {
         log.info("Adding searched product #{} to cart", oneBasedIndex);
         hoverAndAddProductToCart(oneBasedIndex);
 
-        return new com.automationexercise.components.AddToCartModal(driver).waitForModal();
+        return new AddToCartModal(driver).waitForModal();
     }
 
     private ProductsPage hoverAndAddProductToCart(int oneBasedIndex) {
@@ -254,6 +260,7 @@ public class ProductsPage extends AEBasePage {
         hoverOver(wrapper);
         wait.until(ignored -> isOverlayFullyExpanded(productInfo, overlay));
         click(overlayButton);
+        AdHandler.dismissLinkTriggeredVignette(driver);
         return this;
     }
 
@@ -282,8 +289,7 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickWomenCategory() {
         log.info("Clicking Women category");
-        click(CATEGORY_WOMEN);
-        return this;
+        return expandCategory(CATEGORY_WOMEN, FIRST_WOMEN_SUBCATEGORY, "Women");
     }
 
     /**
@@ -292,7 +298,8 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickFirstWomenSubcategory() {
         log.info("Clicking first Women subcategory");
-        click(FIRST_WOMEN_SUBCATEGORY);
+        clickSideEffectFreeNavigationLink(FIRST_WOMEN_SUBCATEGORY, "First Women subcategory");
+        waitUntilVisible(CATEGORY_PAGE_HEADING);
         return this;
     }
 
@@ -301,8 +308,7 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickMenCategory() {
         log.info("Clicking Men category");
-        click(CATEGORY_MEN);
-        return this;
+        return expandCategory(CATEGORY_MEN, FIRST_MEN_SUBCATEGORY, "Men");
     }
 
     /**
@@ -310,7 +316,8 @@ public class ProductsPage extends AEBasePage {
      */
     public ProductsPage clickFirstMenSubcategory() {
         log.info("Clicking first Men subcategory");
-        click(FIRST_MEN_SUBCATEGORY);
+        clickSideEffectFreeNavigationLink(FIRST_MEN_SUBCATEGORY, "First Men subcategory");
+        waitUntilVisible(CATEGORY_PAGE_HEADING);
         return this;
     }
 
@@ -342,7 +349,29 @@ public class ProductsPage extends AEBasePage {
         By locator = By.xpath("(//div[contains(@class,'brands-name')]//li/a)[" + oneBasedIndex + "]");
         String brandName = getBrandNameAt(oneBasedIndex);
         log.info("Clicking brand #{}: '{}'", oneBasedIndex, brandName);
-        click(locator);
+        clickSideEffectFreeNavigationLink(locator, "Brand " + brandName);
+        waitUntilVisible(CATEGORY_PAGE_HEADING);
         return this;
+    }
+
+    private ProductsPage expandCategory(By category, By firstSubcategory, String categoryName) {
+        String sourceUrl = driver.getCurrentUrl();
+        click(category);
+        boolean vignetteDismissed = AdHandler.dismissLinkTriggeredVignette(driver);
+
+        try {
+            waitUntilVisible(firstSubcategory);
+            return this;
+        } catch (TimeoutException timeout) {
+            if (!vignetteDismissed || !isAtUrl(sourceUrl)) {
+                throw timeout;
+            }
+
+            log.warn("Google vignette consumed {} category expansion. Continuing once.", categoryName);
+            click(category);
+            AdHandler.dismissLinkTriggeredVignette(driver);
+            waitUntilVisible(firstSubcategory);
+            return this;
+        }
     }
 }
