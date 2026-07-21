@@ -52,6 +52,7 @@ import org.testng.annotations.Parameters;
 public abstract class BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(BaseTest.class);
+    private static final String LOG_SEPARATOR = "----------------------------------------------";
 
     /**
      * Trả về WebDriver của thread hiện tại từ ThreadLocal trong DriverFactory.
@@ -75,9 +76,9 @@ public abstract class BaseTest {
         String browserName = resolveBrowser(browserParam);
         BrowserType browserType = BrowserType.fromString(browserName);
 
-        log.info("══════════════════════════════════════════════");
-        log.info("TEST SETUP: Initializing browser → {}", browserType);
-        log.info("══════════════════════════════════════════════");
+        log.info(LOG_SEPARATOR);
+        log.info("TEST SETUP: Initializing browser -> {}", browserType);
+        log.info(LOG_SEPARATOR);
 
         DriverFactory.initDriver(browserType);
 
@@ -114,7 +115,7 @@ public abstract class BaseTest {
         } finally {
             log.info("TEST TEARDOWN: Closing browser");
             DriverFactory.quitDriver();
-            log.info("══════════════════════════════════════════════");
+            log.info(LOG_SEPARATOR);
         }
     }
 

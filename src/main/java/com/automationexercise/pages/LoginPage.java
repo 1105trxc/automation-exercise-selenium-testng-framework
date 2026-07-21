@@ -153,7 +153,7 @@ public class LoginPage extends AEBasePage {
      * Returns SignupPage because that's where we land.
      */
     public SignupPage clickSignupButton() {
-        log.info("Clicking Signup button → navigating to account details form");
+        log.info("Clicking Signup button -> navigating to account details form");
         click(SIGNUP_BUTTON);
         return new SignupPage(driver);
     }
