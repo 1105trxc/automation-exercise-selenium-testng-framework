@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.components.AddToCartModal;
 import com.automationexercise.components.FooterSubscriptionComponent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -48,8 +49,12 @@ public class HomePage extends AEBasePage {
      * "Add to cart" button của sản phẩm đầu tiên trong Recommended items.
      * Carousel có thể chứa nhiều items; dùng item đầu tiên visible.
      */
-    private static final By FIRST_RECOMMENDED_ADD_TO_CART =
-            By.xpath("(//div[@id='recommended-item-carousel']//a[contains(@class,'add-to-cart')])[1]");
+    private static final String ACTIVE_RECOMMENDED_ITEM =
+            "#recommended-item-carousel .carousel-inner > .item.active:not(.left):not(.right)";
+    private static final By FIRST_RECOMMENDED_NAME = By.cssSelector(
+            ACTIVE_RECOMMENDED_ITEM + " .product-image-wrapper .productinfo p");
+    private static final By FIRST_RECOMMENDED_ADD_TO_CART = By.cssSelector(
+            ACTIVE_RECOMMENDED_ITEM + " .product-image-wrapper a.add-to-cart");
 
     // -----------------------------------------------------------------
     // Locators – Scroll (TC-025, TC-026)
@@ -97,14 +102,20 @@ public class HomePage extends AEBasePage {
         return isDisplayed(RECOMMENDED_SECTION);
     }
 
-    /**
-     * Click "Add to Cart" của sản phẩm đầu tiên trong Recommended Items section.
-     * Returns this (HomePage) vì modal xuất hiện overlay trang hiện tại.
-     */
-    public HomePage clickAddFirstRecommendedToCart() {
+    /** Returns the first product name on the stable active carousel slide. */
+    public String getFirstActiveRecommendedProductName() {
+        scrollIntoView(RECOMMENDED_SECTION);
+        hoverOver(RECOMMENDED_SECTION);
+        return getText(FIRST_RECOMMENDED_NAME);
+    }
+
+    /** Clicks the first product on the stable active slide and waits for its modal. */
+    public AddToCartModal clickAddFirstRecommendedToCart() {
         log.info("Clicking Add to Cart on first recommended item");
+        scrollIntoView(RECOMMENDED_SECTION);
+        hoverOver(RECOMMENDED_SECTION);
         click(FIRST_RECOMMENDED_ADD_TO_CART);
-        return this;
+        return new AddToCartModal(driver).waitForModal();
     }
 
     // -----------------------------------------------------------------

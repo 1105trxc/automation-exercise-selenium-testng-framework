@@ -219,14 +219,16 @@ public class CartTest extends BaseTest {
         Assert.assertTrue(homePage.isRecommendedItemsVisible(),
                 "FAIL: 'RECOMMENDED ITEMS' section should be visible after scrolling down");
 
-        homePage.clickAddFirstRecommendedToCart();
+        String expectedProductName = homePage.getFirstActiveRecommendedProductName();
 
-        CartPage cartPage = homePage.getAddToCartModal().waitForModal().clickViewCart();
+        CartPage cartPage = homePage.clickAddFirstRecommendedToCart().clickViewCart();
 
         Assert.assertTrue(cartPage.isCartPageVisible(),
                 "FAIL: Cart page should be visible");
-        Assert.assertFalse(cartPage.isCartEmpty(),
-                "FAIL: Cart should have the recommended product");
+        Assert.assertEquals(cartPage.getProductCount(), 1,
+                "FAIL: Cart should contain exactly one recommended product");
+        Assert.assertEquals(cartPage.getProductNameAtRow(1), expectedProductName,
+                "FAIL: Cart should contain the exact recommended product that was clicked");
 
         log.info("TC-AE-022 PASS | Recommended product found in cart");
     }
