@@ -136,7 +136,7 @@ public class ContactUsPage extends AEBasePage {
      */
     public HomePage clickHome() {
         log.info("Clicking Home button after contact form submission");
-        click(HOME_BUTTON);
-        return new HomePage(driver);
+        clickSideEffectFreeNavigationLink(HOME_BUTTON, "Contact Us Home");
+        return new HomePage(driver).waitUntilLoaded();
     }
 }
