@@ -1,0 +1,13 @@
+# Enforce consistent line endings across all platforms.
+# Windows contributors: git will check out CRLF locally but store LF in repo.
+# macOS/Linux contributors: no conversion needed.
+* text=auto
+
+# Source code — always store and compare as LF
+*.java       text eol=lf
+*.xml        text eol=lf
+*.md         text eol=lf
+*.properties text eol=lf
+*.json       text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
