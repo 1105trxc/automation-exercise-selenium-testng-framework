@@ -10,6 +10,7 @@ import com.automationexercise.pages.AccountDeletedPage;
 import com.automationexercise.pages.HomePage;
 import com.automationexercise.pages.LoginPage;
 import com.automationexercise.flows.UserFlow;
+import com.automationexercise.utils.JsonDataReader;
 import com.automationexercise.utils.RandomDataUtils;
 import io.qameta.allure.*;
 import org.slf4j.Logger;
@@ -31,17 +32,6 @@ public class LoginTest extends BaseTest {
 
     private static final Logger log = LoggerFactory.getLogger(LoginTest.class);
 
-    // Registration profile constants (non-sensitive defaults for test users)
-    private static final String TEST_PASSWORD   = "Automation@2026";
-    private static final String TEST_FIRST_NAME = "Test";
-    private static final String TEST_LAST_NAME  = "Automation";
-    private static final String TEST_ADDRESS    = "123 QA Street";
-    private static final String TEST_COUNTRY    = "United States";
-    private static final String TEST_STATE      = "California";
-    private static final String TEST_CITY       = "Los Angeles";
-    private static final String TEST_ZIPCODE    = "90001";
-    private static final String TEST_MOBILE     = "5551234567";
-
     // TC-AE-002: Login with valid credentials
 
     @Test(
@@ -57,6 +47,7 @@ public class LoginTest extends BaseTest {
     )
     public void loginWithValidCredentials() {
         // Arrange
+        UserData testUser = JsonDataReader.readFirst("users.json", "validUsers", UserData.class);
         String uniqueEmail = RandomDataUtils.generateUniqueEmail();
         String uniqueName  = RandomDataUtils.generateName();
         log.info("TC-AE-002 START | email prefix: {}", uniqueEmail.split("@")[0]);
@@ -64,22 +55,6 @@ public class LoginTest extends BaseTest {
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible at start of test");
-
-        UserData testUser = new UserData();
-        testUser.setTitle("Mr");
-        testUser.setName(uniqueName);
-        testUser.setPassword(TEST_PASSWORD);
-        testUser.setDayOfBirth("10");
-        testUser.setMonthOfBirth("3");
-        testUser.setYearOfBirth("1995");
-        testUser.setFirstName(TEST_FIRST_NAME);
-        testUser.setLastName(TEST_LAST_NAME);
-        testUser.setAddress1(TEST_ADDRESS);
-        testUser.setCountry(TEST_COUNTRY);
-        testUser.setState(TEST_STATE);
-        testUser.setCity(TEST_CITY);
-        testUser.setZipcode(TEST_ZIPCODE);
-        testUser.setMobile(TEST_MOBILE);
 
         AccountCreatedPage accountCreatedPage =
                 new UserFlow(driver()).registerNewUser(uniqueName, uniqueEmail, testUser);
@@ -99,7 +74,7 @@ public class LoginTest extends BaseTest {
         Assert.assertTrue(loginPage.isLoginPageVisible(),
                 "FAIL: 'Login to your account' heading should be visible");
 
-        homePage = new UserFlow(driver()).loginSuccessfully(uniqueEmail, TEST_PASSWORD);
+        homePage = new UserFlow(driver()).loginSuccessfully(uniqueEmail, testUser.getPassword());
 
         // Assert
         Assert.assertTrue(homePage.getHeader().isUserLoggedIn(),
@@ -178,6 +153,7 @@ public class LoginTest extends BaseTest {
     )
     public void logoutUserSuccessfully() {
         // Arrange
+        UserData testUser = JsonDataReader.readFirst("users.json", "validUsers", UserData.class);
         String uniqueEmail = RandomDataUtils.generateUniqueEmail();
         String uniqueName  = RandomDataUtils.generateName();
         log.info("TC-AE-004 START | email prefix: {}", uniqueEmail.split("@")[0]);
@@ -185,22 +161,6 @@ public class LoginTest extends BaseTest {
         HomePage homePage = new HomePage(driver());
         Assert.assertTrue(homePage.isHomePageVisible(),
                 "FAIL: Home page should be visible");
-
-        UserData testUser = new UserData();
-        testUser.setTitle("Mr");
-        testUser.setName(uniqueName);
-        testUser.setPassword(TEST_PASSWORD);
-        testUser.setDayOfBirth("10");
-        testUser.setMonthOfBirth("3");
-        testUser.setYearOfBirth("1995");
-        testUser.setFirstName(TEST_FIRST_NAME);
-        testUser.setLastName(TEST_LAST_NAME);
-        testUser.setAddress1(TEST_ADDRESS);
-        testUser.setCountry(TEST_COUNTRY);
-        testUser.setState(TEST_STATE);
-        testUser.setCity(TEST_CITY);
-        testUser.setZipcode(TEST_ZIPCODE);
-        testUser.setMobile(TEST_MOBILE);
 
         homePage = new UserFlow(driver())
                 .registerNewUser(uniqueName, uniqueEmail, testUser)
