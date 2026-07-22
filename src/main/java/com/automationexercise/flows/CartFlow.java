@@ -10,15 +10,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * CartFlow – Orchestrates multi-step workflows for adding products to cart.
- *
- * RESPONSIBILITY:
- *   - Directs multiple Page/Component interactions into business journeys.
- *   - Does NOT contain locators, assertions, or Thread.sleep.
- *
- * ARCHITECTURE:
- *   CartFlow knows what to do (add all products, navigate to cart).
- *   ProductsPage knows how to interact with a single product.
- *   AddToCartModal knows how to manage its own modal state.
  */
 public class CartFlow {
 
@@ -48,15 +39,6 @@ public class CartFlow {
     /**
      * Adds all currently visible searched products to cart one by one,
      * then navigates to the Cart page.
-     *
-     * ORCHESTRATION LOGIC:
-     *   For each product except the last: click Add to cart → Continue Shopping
-     *   For the last product: click Add to cart → View Cart → return CartPage
-     *
-     * WHY HERE AND NOT IN ProductsPage?
-     *   ProductsPage is responsible for interacting with ONE product at a time.
-     *   The decision "how many products, when to continue, when to go to cart"
-     *   is a business journey — it belongs in a Flow.
      *
      * @param productsPage the ProductsPage instance already showing search results
      * @return CartPage after all products have been added

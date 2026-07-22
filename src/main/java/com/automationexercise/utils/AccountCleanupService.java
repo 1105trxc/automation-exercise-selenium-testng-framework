@@ -20,24 +20,7 @@ import java.util.Map;
 
 /**
  * AccountCleanupService – Deletes test accounts via the automationexercise.com DELETE API.
- *
- * ISOLATION GUARANTEE:
- *   Each test thread has its own account registry via ThreadLocal.
- *   Thread A's cleanup never deletes accounts belonging to Thread B.
- *
- * USAGE PATTERN:
- *   Registration: call registerAccountForCleanup(email, password) BEFORE creating the account
- *   so that even a partially completed test cannot leave a leaked account.
- *
- *   Cleanup: call cleanupCurrentTestAccounts() in @AfterMethod (always runs).
- *
- *   If the test deletes the account via UI successfully: call unregisterAccount(email)
- *   so the API cleanup does not attempt a redundant call.
- *
- * ERROR HANDLING:
- *   - IOException: network failure, logged and counted as a failed cleanup.
- *   - InterruptedException: thread interrupt restored via Thread.currentThread().interrupt().
- *   - Cleanup failures are reported honestly in CleanupResult; they are never silently ignored.
+ * Uses ThreadLocal storage for per-thread isolation during test cleanup.
  */
 public final class AccountCleanupService {
 
@@ -49,7 +32,7 @@ public final class AccountCleanupService {
             .build();
 
     /**
-     * Per-thread account registry: email → password.
+     * Per-thread account registry: email -> password.
      * LinkedHashMap preserves registration order for predictable cleanup sequence.
      */
     private static final ThreadLocal<Map<String, String>> ACCOUNTS =
@@ -58,10 +41,6 @@ public final class AccountCleanupService {
     private AccountCleanupService() {
         throw new UnsupportedOperationException("AccountCleanupService is a utility class.");
     }
-
-    // =========================================================================
-    // PUBLIC API
-    // =========================================================================
 
     /**
      * Registers an account for cleanup in the current test thread's registry.

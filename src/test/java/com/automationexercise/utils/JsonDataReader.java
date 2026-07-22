@@ -10,29 +10,7 @@ import java.io.InputStream;
 import java.util.List;
 
 /**
- * JsonDataReader – Utility để đọc file JSON và ánh xạ thành Java objects.
- *
- * HOW IT WORKS:
- * 1. Nhận tên file JSON (không cần path, tự tìm trong /testdata/)
- * 2. Nhận key của array hoặc object trong JSON
- * 3. Dùng Jackson ObjectMapper để deserialize thành kiểu T
- *
- * EXAMPLE:
- * Given users.json:
- * {
- *   "invalidLoginUsers": [
- *     {"email": "a@b.com", "password": "wrong", "expectedError": "..."}
- *   ]
- * }
- *
- * Usage:
- *   List<LoginData> list = JsonDataReader.readList("users.json", "invalidLoginUsers", LoginData.class);
- *   LoginData first = JsonDataReader.readFirst("users.json", "validUsers", UserData.class);
- *
- * WHY IN src/test/java?
- * JsonDataReader phụ thuộc vào test resources (testdata/*.json).
- * Test resources chỉ available trên test classpath, không phải main classpath.
- * → Đặt class này ở test scope là đúng.
+ * JsonDataReader – Utility để đọc file JSON và ánh xạ thành Java objects từ test classpath (/testdata/).
  */
 public final class JsonDataReader {
 

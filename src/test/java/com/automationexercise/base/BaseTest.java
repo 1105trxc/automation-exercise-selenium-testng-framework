@@ -13,41 +13,9 @@ import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 
 /**
- * BaseTest – Abstract parent class cho tất cả test class.
- *
- * TRÁCH NHIỆM:
- * - @BeforeMethod: Khởi động WebDriver, navigate đến baseUrl
- * - @AfterMethod: Đóng WebDriver, dọn dẹp resource
- *
- * QUY TẮC:
- * - Không chứa business logic
- * - Không chứa locator
- * - Không chứa test data
- * - Chỉ setup và teardown
- *
- * TẠI SAO LÀ ABSTRACT:
- * BaseTest là base class, không đại diện cho test cụ thể nào.
- * Đặt là abstract ngăn việc khởi tạo BaseTest() trực tiếp.
- *
- * TẠI SAO DÙNG driver() METHOD THAY VÌ FIELD:
- * DriverFactory lưu driver trong ThreadLocal.
- * Nếu lưu thêm vào field instance: Thread 1 và Thread 2 cùng extend BaseTest
- * có thể ghi đè lẫn nhau khi chạy parallel="methods".
- * driver() method luôn lấy đúng driver của thread hiện tại từ ThreadLocal.
- *
- * BROWSER SELECTION PRIORITY (từ cao đến thấp):
- * 1. CLI System property: -Dbrowser=firefox   (override tất cả)
- * 2. TestNG XML parameter: <parameter name="browser" value="chrome"/>
- * 3. Config file: local.properties browser=chrome
- * 4. Default: chrome
- *
- * VÍ DỤ SỬ DỤNG:
- *   public class LoginTest extends BaseTest {
- *       @Test
- *       public void myTest() {
- *           HomePage homePage = new HomePage(driver());
- *       }
- *   }
+ * BaseTest – Abstract parent class for all TestNG test classes.
+ * Provides WebDriver lifecycle management (@BeforeMethod / @AfterMethod)
+ * and thread-safe driver access via DriverFactory's ThreadLocal registry.
  */
 public abstract class BaseTest {
 

@@ -17,14 +17,6 @@ import java.util.stream.Stream;
 
 /**
  * DownloadManager – Manages file downloads for automated tests.
- *
- * DESIGN PRINCIPLES:
- *   - Download directory is configured via config, not hard-coded.
- *   - All waits use condition polling (FluentWait), not Thread.sleep.
- *   - File deletion failures throw an exception rather than being silently ignored.
- *   - File content is read with explicit UTF-8 encoding.
- *
- * DriverFactory applies this directory to Chrome, Edge and Firefox download preferences.
  */
 public final class DownloadManager {
 
@@ -33,10 +25,6 @@ public final class DownloadManager {
     private DownloadManager() {
         throw new UnsupportedOperationException("DownloadManager is a utility class.");
     }
-
-    // =========================================================================
-    // PUBLIC API
-    // =========================================================================
 
     /**
      * Returns the configured download directory as an absolute Path.

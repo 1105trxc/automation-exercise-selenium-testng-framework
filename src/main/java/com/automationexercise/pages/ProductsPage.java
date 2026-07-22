@@ -13,105 +13,32 @@ import java.util.List;
 
 /**
  * ProductsPage – Page Object cho trang /products.
- *
- * Test Cases:
- * - TC-AE-008: Verify All Products and product detail page
- * - TC-AE-009: Search Product
- * - TC-AE-012: Add Products in Cart (hover add to cart)
- * - TC-AE-018: View Category Products (Women, Men sidebar)
- * - TC-AE-019: View & Cart Brand Products (Brand sidebar)
- * - TC-AE-020: Search Products and Verify Cart After Login
- * - TC-AE-021: Add Review on Product
- *
- * PAGE STRUCTURE:
- * - Left sidebar: Category accordion (Women/Men/Kids) + Brand list
- * - Main content: Product cards in grid
- * - Each card: thumbnail + product name + price + "Add to cart" button
- *
- * HOVER MECHANIC (TC-012):
- * Product cards có overlay xuất hiện khi hover, chứa "Add to cart" button.
- * Flow: hover(card) → waitForOverlay → click(Add to cart) → modal appears.
- *
- * ADD TO CART MODAL:
- * Sau khi add, modal xuất hiện với 2 options:
- * - "Continue Shopping" → close modal, stay on ProductsPage
- * - "View Cart" → navigate to CartPage
  */
 public class ProductsPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(ProductsPage.class);
 
-    // -----------------------------------------------------------------
-    // Locators – Product List
-    // -----------------------------------------------------------------
-
-    /** "ALL PRODUCTS" heading */
     private static final By ALL_PRODUCTS_HEADING = By.xpath("//h2[normalize-space()='All Products']");
-
-    /** Tất cả link "View Product" */
     private static final By VIEW_PRODUCT_LINKS = By.xpath("//a[contains(@href,'/product_details/')]");
-
-    /** "View Product" của sản phẩm đầu tiên */
     private static final By FIRST_PRODUCT_VIEW = By.xpath("(//a[contains(@href,'/product_details/')])[1]");
 
-    // -----------------------------------------------------------------
-    // Locators – Search
-    // -----------------------------------------------------------------
-
-    /** Search input */
     private static final By SEARCH_INPUT = By.id("search_product");
-
-    /** Search submit button */
     private static final By SEARCH_BUTTON = By.id("submit_search");
-
-    /** "SEARCHED PRODUCTS" heading */
     private static final By SEARCHED_PRODUCTS_HEADING = By.xpath("//h2[normalize-space()='Searched Products']");
-
     private static final By PRODUCT_NAMES = By.cssSelector(".productinfo p");
 
-    // -----------------------------------------------------------------
-    // Locators – Add to Cart (hover cards)
-    // -----------------------------------------------------------------
-
-    /**
-     * "Add to cart" buttons trên product overlay (visible sau hover).
-     * Tất cả buttons dùng class "btn btn-default add-to-cart".
-     */
     private static final By ADD_TO_CART_BUTTONS =
             By.cssSelector(".product-overlay a.add-to-cart");
 
-    // -----------------------------------------------------------------
-    // Locators – Category Sidebar (TC-018)
-    // -----------------------------------------------------------------
-
-    /** "CATEGORY" sidebar section heading */
     private static final By CATEGORY_SECTION = By.xpath("//h2[normalize-space()='Category']");
-
-    /** "Women" category accordion link */
     private static final By CATEGORY_WOMEN = By.xpath("//a[normalize-space()='Women'][@href='#Women']");
-
-    /**
-     * First subcategory link under Women (e.g. Dress, Tops, Saree).
-     * Chọn link đầu tiên trong panel #Women để không hardcode.
-     */
     private static final By FIRST_WOMEN_SUBCATEGORY =
             By.xpath("(//div[@id='Women']//li/a)[1]");
-
-    /** "Men" category accordion link */
     private static final By CATEGORY_MEN = By.xpath("//a[normalize-space()='Men'][@href='#Men']");
-
-    /** First subcategory link under Men (e.g. Tshirts, Jeans, Casual) */
     private static final By FIRST_MEN_SUBCATEGORY =
             By.xpath("(//div[@id='Men']//li/a)[1]");
-
-    /** Category page heading (e.g. "WOMEN - TOPS PRODUCTS") */
     private static final By CATEGORY_PAGE_HEADING = By.cssSelector(".title.text-center");
 
-    // -----------------------------------------------------------------
-    // Locators – Brand Sidebar (TC-019)
-    // -----------------------------------------------------------------
-
-    /** Brands section label */
     private static final By BRANDS_SECTION = By.cssSelector(".brands_products h2");
 
     // -----------------------------------------------------------------

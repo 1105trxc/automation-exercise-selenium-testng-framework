@@ -13,16 +13,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * UserFlow – Orchestrates common workflows related to user accounts.
- *
- * RESPONSIBILITY:
- *   - Positive registration flow: navigate → fill → submit → return AccountCreatedPage.
- *   - Positive login flow: navigate → enter credentials → submit → return HomePage.
- *
- * RULES:
- *   - No Assert / locator / JS / retry / broad catch inside a Flow.
- *   - registerNewUser() registers cleanup BEFORE submitting, so partial failures don't leak accounts.
- *   - Negative tests (wrong password, duplicate email) use Page Objects directly
- *     because they need to assert error state, which is not a Flow concern.
  */
 public class UserFlow {
 
@@ -37,19 +27,9 @@ public class UserFlow {
     /**
      * Completes the positive user registration journey and returns the confirmation page.
      *
-     * FAIL-FAST POLICY:
-     *   This method does not check the URL or silently continue on failure.
-     *   clickCreateAccount() waits for the account-created state and propagates a
-     *   timeout if registration does not reach it.
-     *
-     * CLEANUP REGISTRATION:
-     *   AccountCleanupService.registerAccountForCleanup() is called BEFORE clicking
-     *   Create Account. This ensures even a partially completed registration is cleaned up
-     *   if the test subsequently fails.
-     *
      * @param uniqueName   unique display name for signup
      * @param uniqueEmail  unique email address for signup
-     * @param user         UserData with the rest of the registration details
+     * @param user         UserData with registration details
      * @return the displayed account-created confirmation page
      */
     public AccountCreatedPage registerNewUser(String uniqueName, String uniqueEmail, UserData user) {

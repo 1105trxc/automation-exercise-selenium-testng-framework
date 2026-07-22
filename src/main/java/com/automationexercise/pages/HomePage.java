@@ -14,19 +14,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * HomePage – Page Object for the home page (https://automationexercise.com/).
- *
- * Test Cases:
- * - TC-AE-001 to TC-AE-008: Basic nav, login, register
- * - TC-AE-010: Verify Subscription in home page (footer form)
- * - TC-AE-022: Add to cart from Recommended items
- * - TC-AE-025: Verify Scroll Up using Arrow button
- * - TC-AE-026: Verify Scroll Up without Arrow button (PAGE_UP key)
- *
- * NAV ELEMENTS (when NOT logged in):
- *   Home | Products | Cart | Signup/Login | Test Cases | API Testing | Contact Us
- *
- * NAV ELEMENTS (when logged in):
- *   Home | Products | Cart | Logged in as <b>username</b> | Logout | Delete Account | ...
  */
 public class HomePage extends AEBasePage {
 

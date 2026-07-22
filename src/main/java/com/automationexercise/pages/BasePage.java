@@ -15,24 +15,6 @@ import java.util.Objects;
 
 /**
  * BasePage – Abstract base class for all Page Objects.
- *
- * TRÁCH NHIỆM:
- * - Cung cấp các thao tác element chung: click, type, getText, wait, scroll...
- * - Không chứa locator (thuộc về từng page class cụ thể)
- * - Không chứa assertion (thuộc về test class)
- * - Không chứa test data
- *
- * DESIGN DECISIONS:
- *
- * 1. click() KHÔNG tự động xử lý quảng cáo
- *    Lý do: Tự động fallback che giấu lỗi thật (locator sai, element disabled, v.v.)
- *
- * 2. isDisplayedNow() vs isDisplayed()
- *    - isDisplayedNow(): kiểm tra tức thì, không wait. Dùng cho negative assertion.
- *    - isDisplayed(locator): wait với default timeout. Dùng cho positive assertion.
- *
- * 3. type() không log nội dung nhập
- *    Lý do: Tránh lộ password và dữ liệu nhạy cảm trong log file.
  */
 public abstract class BasePage {
 
