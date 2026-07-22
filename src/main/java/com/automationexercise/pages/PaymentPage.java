@@ -1,5 +1,6 @@
 package com.automationexercise.pages;
 
+import com.automationexercise.models.PaymentData;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.slf4j.Logger;
@@ -110,13 +111,12 @@ public class PaymentPage extends AEBasePage {
      * Fill toàn bộ payment form và submit.
      * Dùng cho test cases không cần assert từng field riêng.
      */
-    public PaymentSuccessPage fillAndConfirm(String cardName, String cardNumber,
-                                              String cvcValue, String month, String year) {
-        return enterCardName(cardName)
-                .enterCardNumber(cardNumber)
-                .enterCVC(cvcValue)
-                .enterExpiryMonth(month)
-                .enterExpiryYear(year)
+    public PaymentSuccessPage fillAndConfirm(PaymentData payment) {
+        return enterCardName(payment.getNameOnCard())
+                .enterCardNumber(payment.getCardNumber())
+                .enterCVC(payment.getCvc())
+                .enterExpiryMonth(payment.getExpiryMonth())
+                .enterExpiryYear(payment.getExpiryYear())
                 .clickPayAndConfirm();
     }
 }

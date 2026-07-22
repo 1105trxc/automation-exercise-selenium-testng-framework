@@ -2,7 +2,6 @@ package com.automationexercise.tests.checkout;
 
 import com.automationexercise.base.BaseTest;
 import com.automationexercise.flows.CartFlow;
-import com.automationexercise.flows.CheckoutFlow;
 import com.automationexercise.flows.UserFlow;
 import com.automationexercise.models.PaymentData;
 import com.automationexercise.models.UserData;
@@ -61,7 +60,10 @@ public class CheckoutTest extends BaseTest {
                 "FAIL: Delivery address should be visible on checkout page");
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
-        PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
+        PaymentSuccessPage successPage = checkoutPage
+                .enterOrderComment(payment.getOrderComment())
+                .clickPlaceOrder()
+                .fillAndConfirm(payment);
         assertOrderPlaced(successPage);
 
         homePage = successPage.clickContinue();
@@ -87,7 +89,10 @@ public class CheckoutTest extends BaseTest {
         CheckoutPage checkoutPage = cartPage.clickProceedToCheckoutLoggedIn();
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
-        PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
+        PaymentSuccessPage successPage = checkoutPage
+                .enterOrderComment(payment.getOrderComment())
+                .clickPlaceOrder()
+                .fillAndConfirm(payment);
         assertOrderPlaced(successPage);
 
         AccountDeletedPage deletedPage = successPage.clickContinue().getHeader().clickDeleteAccount();
@@ -116,7 +121,10 @@ public class CheckoutTest extends BaseTest {
         CheckoutPage checkoutPage = cartPage.clickProceedToCheckoutLoggedIn();
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
-        PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
+        PaymentSuccessPage successPage = checkoutPage
+                .enterOrderComment(payment.getOrderComment())
+                .clickPlaceOrder()
+                .fillAndConfirm(payment);
         assertOrderPlaced(successPage);
 
         AccountDeletedPage deletedPage = successPage.clickContinue().getHeader().clickDeleteAccount();
@@ -176,7 +184,10 @@ public class CheckoutTest extends BaseTest {
         CheckoutPage checkoutPage = cartPage.clickProceedToCheckoutLoggedIn();
 
         PaymentData payment = JsonDataReader.readFirst("checkout.json", "paymentData", PaymentData.class);
-        PaymentSuccessPage successPage = new CheckoutFlow().completePayment(checkoutPage, payment);
+        PaymentSuccessPage successPage = checkoutPage
+                .enterOrderComment(payment.getOrderComment())
+                .clickPlaceOrder()
+                .fillAndConfirm(payment);
 
         assertOrderPlaced(successPage);
         Assert.assertTrue(successPage.isDownloadInvoiceVisible(), "FAIL: 'Download Invoice' button should be visible");

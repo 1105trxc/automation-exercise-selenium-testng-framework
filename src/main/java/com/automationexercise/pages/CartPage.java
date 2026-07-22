@@ -12,69 +12,20 @@ import java.util.List;
 
 /**
  * CartPage – Page Object cho trang /view_cart.
- *
- * Test Cases:
- * - TC-AE-011: Verify Subscription in Cart page
- * - TC-AE-012: Add Products in Cart (verify prices/qty/total)
- * - TC-AE-013: Verify Product quantity in Cart
- * - TC-AE-014/015/016: Place Order flows (proceed to checkout)
- * - TC-AE-017: Remove Products From Cart
- * - TC-AE-020: Search Products and Verify Cart After Login
- * - TC-AE-022: Add to cart from Recommended items
- * - TC-AE-023: Verify address details in checkout page
- * - TC-AE-024: Download Invoice after purchase order
- *
- * CART TABLE STRUCTURE:
- * <table class="table table-condensed">
- *   <tbody>
- *     <tr id="product-{id}">
- *       <td class="cart_product">    ← product image
- *       <td class="cart_description"> ← name + category
- *       <td class="cart_price">      ← unit price
- *       <td class="cart_quantity">   ← quantity input
- *       <td class="cart_total">      ← total = price × qty
- *       <td class="cart_delete">     ← X remove button
- *     </tr>
- *   </tbody>
- * </table>
  */
 public class CartPage extends AEBasePage {
 
     private static final Logger log = LoggerFactory.getLogger(CartPage.class);
 
-    // -----------------------------------------------------------------
-    // Locators – Cart table
-    // -----------------------------------------------------------------
-
-    /** Cart section heading */
     private static final By CART_HEADING = By.xpath("//li[@class='active' and contains(text(),'Shopping Cart')]");
-
-    /** Tất cả các row sản phẩm trong cart */
     private static final By CART_ROWS = By.cssSelector("tbody tr");
-
-    /** Tên sản phẩm (trong row – dùng với row element context) */
     private static final By ROW_PRODUCT_NAME = By.cssSelector("td.cart_description h4 a");
-
-    /** Unit price (trong row) */
     private static final By ROW_UNIT_PRICE = By.cssSelector("td.cart_price p");
-
-    /** Quantity (trong row) */
     private static final By ROW_QUANTITY = By.cssSelector("td.cart_quantity button");
-
-    /** Total price (trong row) */
     private static final By ROW_TOTAL = By.cssSelector("td.cart_total p");
-
-    /** Remove button X (trong row) */
     private static final By ROW_DELETE = By.cssSelector("td.cart_delete a.cart_quantity_delete");
 
-    // -----------------------------------------------------------------
-    // Locators – Actions
-    // -----------------------------------------------------------------
-
-    /** "Proceed To Checkout" button ở cuối trang cart */
     private static final By PROCEED_TO_CHECKOUT_BTN = By.cssSelector(".btn.btn-default.check_out");
-
-    /** "Register / Login" link – xuất hiện trong modal khi chưa login */
     private static final By REGISTER_LOGIN_LINK = By.cssSelector("#checkoutModal .modal-body a");
 
     // -----------------------------------------------------------------
@@ -208,8 +159,8 @@ public class CartPage extends AEBasePage {
      * Trả về CheckoutPage.
      */
     public CheckoutPage clickProceedToCheckoutLoggedIn() {
-        log.info("Clicking Proceed To Checkout (Logged In)");
-        clickSideEffectFreeNavigationLink(PROCEED_TO_CHECKOUT_BTN, "Proceed To Checkout");
+        log.info("Clicking Proceed To Checkout as logged-in user");
+        click(PROCEED_TO_CHECKOUT_BTN);
         return new CheckoutPage(driver).waitUntilLoaded();
     }
 
