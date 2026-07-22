@@ -27,7 +27,6 @@ Path: `src/main/java/com/automationexercise/flows`
 
 - `UserFlow`: registration và positive login journeys.
 - `CartFlow`: orchestration thêm nhiều sản phẩm.
-- `CheckoutFlow`: comment, payment và order completion.
 
 Flow không chứa TestNG assertion, locator hoặc generated test data. Flow fail-fast khi intermediate page không đạt postcondition cần thiết.
 
@@ -58,14 +57,21 @@ ContactUsPage
 TestCasesPage
 ```
 
-Reusable components:
+Reusable UI components:
 
 ```text
 HeaderComponent
 FooterSubscriptionComponent
 AddToCartModal
+```
+
+Technical / Site-specific compatibility layer:
+
+```text
 AdHandler
 ```
+
+> `AdHandler` is a site-specific compatibility layer for third-party advertisement behavior on Automation Exercise. It is not part of the reusable generic Selenium core.
 
 Page actions trả destination thật. Ví dụ `clickCreateAccount()` trả `AccountCreatedPage`; `clickDeleteAccount()` trả `AccountDeletedPage`; `clickFirstProductViewProduct()` chỉ trả `ProductDetailPage` sau khi URL và identity element đạt postcondition.
 
@@ -111,6 +117,24 @@ Chỉ nhận diện selector Google đã biết. Resolution ưu tiên native clo
 - `AccountCleanupService` dùng per-thread registry và trả `CleanupResult`.
 - `DownloadManager` xóa stale files, poll file completion và đọc UTF-8.
 - `TestListener` ghi failure context và chụp screenshot khi driver còn khả dụng.
+
+## Architecture Freeze
+
+Approved reusable flows:
+- UserFlow
+- CartFlow
+
+Approved reusable UI components:
+- HeaderComponent
+- FooterSubscriptionComponent
+- AddToCartModal
+
+New abstractions must not be added unless:
+1. behavior is duplicated in at least 3 callers, or
+2. it represents a real reusable UI state/component, or
+3. it isolates a technical concern used by multiple callers.
+
+Future-use speculation is not sufficient justification.
 
 ## Reliability rules
 
